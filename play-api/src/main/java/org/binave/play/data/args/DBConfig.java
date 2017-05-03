@@ -14,19 +14,28 @@
  * limitations under the License.
  */
 
-package org.binave.play.config;
-
-import org.binave.play.config.api.Ration;
+package org.binave.play.data.args;
 
 /**
- * 补给类工厂方法
+ * 数据库配置
+ * 详见 org.apache.commons.dbcp2.BasicDataSourceMXBean
  *
- * @author bin jin on 2017/4/26.
+ * [module args]
+ *
+ * @author bin jin on 2017/4/19.
  * @since 1.8
  */
-public class RationFactory {
+public interface DBConfig {
 
-    public static Ration createRation(int max) {
-        return new SemaphoreRationImpl(max);
-    }
+    String getDriverClassName();
+
+    String getPassword();
+
+    String getUrl();
+
+    String getUsername();
+
+    long getMaxConnLifetimeMillis();
+
+    ClassLoader getDriverClassLoader();
 }

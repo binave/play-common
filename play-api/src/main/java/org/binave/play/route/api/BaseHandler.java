@@ -14,19 +14,26 @@
  * limitations under the License.
  */
 
-package org.binave.play.config;
+package org.binave.play.route.api;
 
-import org.binave.play.config.api.Ration;
+
+import org.binave.play.route.args.DataPacket;
 
 /**
- * 补给类工厂方法
+ * 基本处理器
  *
- * @author bin jin on 2017/4/26.
+ * [module interface]
+ *
+ * @author bin jin on 2017/4/27.
  * @since 1.8
  */
-public class RationFactory {
+public interface BaseHandler {
 
-    public static Ration createRation(int max) {
-        return new SemaphoreRationImpl(max);
-    }
+    /**
+     * 执行业务逻辑
+     */
+    DataPacket call(DataPacket dataPacket);
+
+    int tab();
+
 }

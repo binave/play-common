@@ -14,19 +14,33 @@
  * limitations under the License.
  */
 
-package org.binave.play.config;
-
-import org.binave.play.config.api.Ration;
+package org.binave.play.data.api;
 
 /**
- * 补给类工厂方法
+ * 排他锁、重锁、悲观锁
  *
- * @author bin jin on 2017/4/26.
+ * @author bin jin on 2017/4/21.
  * @since 1.8
  */
-public class RationFactory {
+public interface Lock {
 
-    public static Ration createRation(int max) {
-        return new SemaphoreRationImpl(max);
-    }
+    /**
+     * 锁
+     *
+     * @param key       锁 key
+     * @return          用于解锁的数值
+     */
+    long lock(String key);
+
+    /**
+     * 申请延长锁时间
+     */
+    boolean delayUnlock(long stamp);
+
+    /**
+     * 解锁
+     * @param stamp     lock 输出的数值
+     */
+    void unlock(long stamp);
+
 }

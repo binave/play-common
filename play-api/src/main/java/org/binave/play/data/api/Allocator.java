@@ -14,19 +14,38 @@
  * limitations under the License.
  */
 
-package org.binave.play.config;
-
-import org.binave.play.config.api.Ration;
+package org.binave.play.data.api;
 
 /**
- * 补给类工厂方法
+ * id 、pool 分配器
  *
- * @author bin jin on 2017/4/26.
+ * [module interface]
+ *
+ * @author bin jin on 2017/4/13.
  * @since 1.8
  */
-public class RationFactory {
+public interface Allocator {
 
-    public static Ration createRation(int max) {
-        return new SemaphoreRationImpl(max);
-    }
+    /**
+     * 生成全局唯一 id
+     */
+    long adder();
+
+    /**
+     * 生成 pool id
+     */
+    int createPoolId();
+
+    /**
+     * 查看是否有过去的 id
+     * 用于倒库
+     */
+    int lastPoolId(int currentPoolId);
+
+    /**
+     * 查看是否有新 pool
+     * 用于倒库
+     */
+    int latestPoolId(int currentPoolId);
+
 }

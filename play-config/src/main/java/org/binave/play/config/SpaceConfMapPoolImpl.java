@@ -16,11 +16,11 @@
 
 package org.binave.play.config;
 
-import org.binave.play.api.SpaceConfMap;
-import org.binave.play.api.config.Config;
-import org.binave.play.api.config.Configure;
-import org.binave.play.api.config.ConfLoader;
-import org.binave.util.IndexMap;
+import org.binave.common.collection.IndexMap;
+import org.binave.play.config.api.SpaceConfMap;
+import org.binave.play.config.args.Config;
+import org.binave.play.config.args.Configure;
+import org.binave.play.config.api.ConfLoader;
 
 import java.util.*;
 import java.util.concurrent.locks.StampedLock;
@@ -119,7 +119,7 @@ class SpaceConfMapPoolImpl implements SpaceConfMap {
         for (String token : tokens) {
 
             // 从其他模块逐个获得配置
-            List<? extends Configure> configList = confLoader.load(token);
+            List<? extends Configure> configList = confLoader.loadLogicConfig(token);
 
             // 此处不考少数无法匹配的 token
             if (configList == null || configList.isEmpty()) continue;

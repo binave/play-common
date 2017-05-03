@@ -16,21 +16,26 @@
 
 package org.binave.play.config;
 
-import org.binave.play.api.SpaceConfMap;
-import org.binave.play.api.ShareConfMap;
-import org.binave.play.api.ShareConfMulti;
-import org.binave.play.api.ShareConfTable;
+import org.binave.play.config.api.SpaceConfMap;
+import org.binave.play.config.api.ShareConfMap;
+import org.binave.play.config.api.ShareConfMulti;
+import org.binave.play.config.api.ShareConfTable;
 
 /**
  * 获得配置管理类
  * 使用工厂模式隔离实现，减少依赖
+ *
+ * 注意：
+ *      任何一个单独模块，在使用此工具时，都需要实现一个更新订阅  。
  *
  * @author bin jin on 2017/4/14.
  * @since 1.8
  */
 public class ConfPoolFactory {
 
-    // Map
+    /**
+     * 区域 map
+     */
     public static SpaceConfMap createSpaceConfMap() {
         return new SpaceConfMapPoolImpl();
     }

@@ -14,19 +14,38 @@
  * limitations under the License.
  */
 
-package org.binave.play.config;
-
-import org.binave.play.config.api.Ration;
+package org.binave.play.config.args;
 
 /**
- * 补给类工厂方法
+ * 配置实体类接口
+ * 用于获取角色使用
  *
- * @author bin jin on 2017/4/26.
+ * [module args]
+ *
+ * @author bin jin on 2017/4/17.
  * @since 1.8
  */
-public class RationFactory {
+public interface Config {
 
-    public static Ration createRation(int max) {
-        return new SemaphoreRationImpl(max);
-    }
+    /**
+     * 获得第一个 key，
+     * 一般为 excel 的 key
+     */
+    int getKey();
+
+    /**
+     * 获得第二个 key
+     */
+    int getExtKey();
+
+    /**
+     * 版本号，用于比对一致性
+     */
+    long getVersion();
+
+    /**
+     * 显示的重载此方法
+     */
+    String toString();
+
 }

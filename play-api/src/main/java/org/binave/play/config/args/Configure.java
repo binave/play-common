@@ -14,19 +14,28 @@
  * limitations under the License.
  */
 
-package org.binave.play.config;
-
-import org.binave.play.config.api.Ration;
+package org.binave.play.config.args;
 
 /**
- * 补给类工厂方法
+ * 所有的配置实体都要实现此接口
+ * 用于设置者使用，
+ * 获取者不应当使用这个接口
  *
- * @author bin jin on 2017/4/26.
+ * [module args]
+ *
+ * @author bin jin on 2017/3/24.
  * @since 1.8
  */
-public class RationFactory {
+public interface Configure extends Config {
 
-    public static Ration createRation(int max) {
-        return new SemaphoreRationImpl(max);
-    }
+    /**
+     * 将 join，和其他配置初始化处理放入其中
+     */
+    void init();
+
+    /**
+     * 由框架进行配置
+     */
+    void setVersion(long version);
+
 }

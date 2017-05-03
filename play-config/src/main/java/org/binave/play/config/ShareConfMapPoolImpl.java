@@ -16,12 +16,12 @@
 
 package org.binave.play.config;
 
-import org.binave.play.api.ShareConfMap;
-import org.binave.play.api.config.Config;
-import org.binave.play.api.config.Configure;
-import org.binave.play.api.config.ConfLoader;
-import org.binave.util.proxy.MapProxy;
-import org.binave.util.proxy.SyncProxy;
+import org.binave.common.collection.SyncProxy;
+import org.binave.common.collection.proxy.MapProxy;
+import org.binave.play.config.api.ShareConfMap;
+import org.binave.play.config.args.Config;
+import org.binave.play.config.args.Configure;
+import org.binave.play.config.api.ConfLoader;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -50,6 +50,8 @@ class ShareConfMapPoolImpl implements ShareConfMap {
     }
 
     private MapProxy<Integer, Configure> getSyncProxy(String token) {
+        if (token == null) return null; // support update
+
         MapProxy<Integer, Configure> syncProxy = globalMapsCache.get(token);
         if (syncProxy == null) {
 
@@ -120,7 +122,7 @@ class ShareConfMapPoolImpl implements ShareConfMap {
             proxies[i] = getSyncProxy(tokens[i]);
 
             // 从配置模块拿到配置
-            List<? extends Configure> configList = confLoader.load(tokens[i]);
+            List<? extends Configure> configList = confLoader.loadLogicConfig(tokens[i]);
 
             if (configList == null || configList.isEmpty()) continue;
 

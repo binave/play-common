@@ -16,14 +16,14 @@
 
 package org.binave.play.config;
 
-import org.binave.play.api.ShareConfTable;
-import org.binave.play.api.config.Config;
-import org.binave.play.api.config.Configure;
-import org.binave.play.api.config.ConfLoader;
+import org.binave.common.collection.SyncProxy;
+import org.binave.common.collection.proxy.TableProxy;
+import org.binave.play.config.api.ShareConfTable;
+import org.binave.play.config.args.Config;
+import org.binave.play.config.args.Configure;
+import org.binave.play.config.api.ConfLoader;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
-import org.binave.util.proxy.SyncProxy;
-import org.binave.util.proxy.TableProxy;
 
 import java.util.HashMap;
 import java.util.List;
@@ -56,6 +56,8 @@ class ShareConfTablePoolImpl implements ShareConfTable {
     }
 
     private TableProxy<Integer, Integer, Configure> getSyncProxy(String token) {
+        if (token == null) return null; // support update
+
         TableProxy<Integer, Integer, Configure> syncProxy = globalTablesCache.get(token);
         if (syncProxy == null) {
             syncProxy = new TableProxy<>(); // new 代理类，内部为空
@@ -65,8 +67,7 @@ class ShareConfTablePoolImpl implements ShareConfTable {
     }
 
     private static boolean needReadLock = false;
-    private final static StampedLock sl = new StampedLock();
-
+    private static final StampedLock sl = new StampedLock();
 
     @Override
     public void reload(ConfLoader confLoader, long version, boolean override, String... tokens) {
@@ -129,7 +130,7 @@ class ShareConfTablePoolImpl implements ShareConfTable {
             proxies[i] = getSyncProxy(tokens[i]);
 
             // 从配置模块获得配置
-            List<? extends Configure> confList = confLoader.load(tokens[i]);
+            List<? extends Configure> confList = confLoader.loadLogicConfig(tokens[i]);
 
             if (confList == null || confList.isEmpty()) continue;
 

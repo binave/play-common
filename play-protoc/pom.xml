@@ -5,14 +5,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.binave.play</groupId>
-    <artifactId>play-config</artifactId>
+    <artifactId>play-protoc</artifactId>
     <version>0.1.0-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
-            <groupId>org.binave.common</groupId>
-            <artifactId>collect</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>3.3.0</version>
         </dependency>
         <dependency>
             <groupId>org.binave.common</groupId>
@@ -20,21 +20,9 @@
             <version>0.1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>19.0</version>
-        </dependency>
-        <!-- EnvLoader#getProperties(ServletContext)
-        <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>3.1.0</version>
-        </dependency>
-        -->
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.8.0</version>
+            <groupId>org.binave.common</groupId>
+            <artifactId>serialize</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.binave.play</groupId>

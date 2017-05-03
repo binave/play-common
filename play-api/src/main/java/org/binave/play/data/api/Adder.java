@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package org.binave.play.config;
-
-import org.binave.play.config.api.Ration;
+package org.binave.play.data.api;
 
 /**
- * 补给类工厂方法
+ * 累加器
  *
- * @author bin jin on 2017/4/26.
+ * @author bin jin on 2017/4/18.
  * @since 1.8
  */
-public class RationFactory {
+public interface Adder {
 
-    public static Ration createRation(int max) {
-        return new SemaphoreRationImpl(max);
-    }
+    /**
+     * 在有值的情况下，才会累加
+     */
+    Long adder(Object key, long value);
+
 }

@@ -16,12 +16,13 @@
 
 package org.binave.play.config;
 
-import org.binave.play.api.Ration;
+import org.binave.play.config.api.Ration;
 
 import java.util.concurrent.Semaphore;
 
 /**
  * 补给实现
+ * todo 没实现超时
  *
  * @author bin jin on 2017/4/26.
  * @since 1.8

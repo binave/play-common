@@ -14,19 +14,36 @@
  * limitations under the License.
  */
 
-package org.binave.play.config;
+package org.binave.play.config.api;
 
-import org.binave.play.config.api.Ration;
+import org.binave.play.config.args.UpdateNotice;
+
+import java.util.Set;
 
 /**
- * 补给类工厂方法
+ * 更新通知
+ * 实现：订阅者
+ * 通过 tab 识别身份
  *
- * @author bin jin on 2017/4/26.
+ * 注意：
+ *      保证多个配置的一致性没有意义。
+ *      一致性需要关联配置通过版本号一致来维护
+ *
+ * [module interface]
+ *
+ * @author bin jin on 2017/2/24.
  * @since 1.8
  */
-public class RationFactory {
+public interface UpdateNotify {
 
-    public static Ration createRation(int max) {
-        return new SemaphoreRationImpl(max);
-    }
+    /**
+     * 由调用者通知实现者
+     */
+    void notify(UpdateNotice notice);
+
+    /**
+     * 获得实现者的页签
+     */
+    Set<String> tab();
+
 }

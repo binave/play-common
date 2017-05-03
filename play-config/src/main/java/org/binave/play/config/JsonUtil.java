@@ -17,7 +17,7 @@
 package org.binave.play.config;
 
 import com.google.gson.*;
-import org.binave.util.CharUtil;
+import org.binave.common.util.CharUtil;
 
 import java.io.File;
 import java.io.StringReader;

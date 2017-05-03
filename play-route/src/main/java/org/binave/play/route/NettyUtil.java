@@ -69,8 +69,8 @@ public class NettyUtil {
      *
      * @param invokers  个人
      */
-    public static void flush(int codeId, byte[] data, int offset, ChannelOutboundInvoker... invokers) {
-        ByteBuf newBuf = getByteBuf(codeId, data, offset);
+    public static void flush(int codeId, byte[] data, ChannelOutboundInvoker... invokers) {
+        ByteBuf newBuf = getByteBuf(codeId, data);
         for (ChannelOutboundInvoker invoker : invokers)
             invoker.writeAndFlush(newBuf); // 下发数据
     }
@@ -80,17 +80,18 @@ public class NettyUtil {
      *
      * @param groups    组
      */
-    public static void flushs(int codeId, byte[] data, int offset, ChannelGroup... groups) {
-        ByteBuf newBuf = getByteBuf(codeId, data, offset);
+    public static void flushs(int codeId, byte[] data, ChannelGroup... groups) {
+        ByteBuf newBuf = getByteBuf(codeId, data);
         for (ChannelGroup invoker : groups)
             invoker.writeAndFlush(newBuf); // 下发数据
     }
 
-    private static ByteBuf getByteBuf(int codeId, byte[] data, int offset) {
-        ByteBuf newBuf = Unpooled.buffer(data.length + offset);
-        newBuf.writeInt(data.length); // 数据长度
+    private static ByteBuf getByteBuf(int codeId, byte[] data) {
+        int len = data == null ? 0 : data.length;
+        ByteBuf newBuf = Unpooled.buffer(Integer.BYTES * 2 + len);
+        newBuf.writeInt(len); // 数据长度
         newBuf.writeInt(codeId); // 业务逻辑编号
-        newBuf.writeBytes(data); // 数据体
+        if (len > 0) newBuf.writeBytes(data); // 数据体
         return newBuf;
     }
 

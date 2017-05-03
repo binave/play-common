@@ -16,14 +16,14 @@
 
 package org.binave.play.config;
 
-import org.binave.play.api.ShareConfMulti;
-import org.binave.play.api.config.Config;
-import org.binave.play.api.config.Configure;
-import org.binave.play.api.config.ConfLoader;
+import org.binave.common.collection.SyncProxy;
+import org.binave.common.collection.proxy.MultimapProxy;
+import org.binave.play.config.api.ShareConfMulti;
+import org.binave.play.config.args.Config;
+import org.binave.play.config.args.Configure;
+import org.binave.play.config.api.ConfLoader;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
-import org.binave.util.proxy.MultimapProxy;
-import org.binave.util.proxy.SyncProxy;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -49,6 +49,8 @@ class ShareConfMultiPoolImpl implements ShareConfMulti {
     }
 
     private MultimapProxy<Integer, Configure> getSyncProxy(String token) {
+        if (token == null) return null; // support update
+
         MultimapProxy<Integer, Configure> syncProxy = globalMultiMapsCache.get(token);
         if (syncProxy == null) {
 
@@ -62,7 +64,7 @@ class ShareConfMultiPoolImpl implements ShareConfMulti {
     }
 
     private static boolean needReadLock = false;
-    private final static StampedLock sl = new StampedLock();
+    private static final StampedLock sl = new StampedLock();
 
 
     @Override
@@ -119,7 +121,7 @@ class ShareConfMultiPoolImpl implements ShareConfMulti {
             // 拿到 Table 代理
             proxies[i] = getSyncProxy(tokens[i]);
 
-            List<? extends Configure> configList = confLoader.load(tokens[i]);
+            List<? extends Configure> configList = confLoader.loadLogicConfig(tokens[i]);
 
             if (configList == null || configList.isEmpty()) continue;
 

@@ -14,19 +14,29 @@
  * limitations under the License.
  */
 
-package org.binave.play.config;
+package org.binave.play.config.api;
 
-import org.binave.play.config.api.Ration;
+import org.binave.play.config.args.Config;
+
+import java.util.Collection;
 
 /**
- * 补给类工厂方法
+ * 全局 Map
+ * 仅支持 id 具有唯一性的配置
  *
- * @author bin jin on 2017/4/26.
+ * @author bin jin on 2017/4/14.
  * @since 1.8
  */
-public class RationFactory {
+public interface SpaceConfMap extends Refresh {
 
-    public static Ration createRation(int max) {
-        return new SemaphoreRationImpl(max);
-    }
+    /**
+     * 获得配置
+     */
+    <Conf extends Config> Conf get(int id);
+
+    /**
+     * 获得配置列表
+     */
+    Collection<? extends Config> get(String token);
+
 }

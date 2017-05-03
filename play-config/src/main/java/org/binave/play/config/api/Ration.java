@@ -14,19 +14,33 @@
  * limitations under the License.
  */
 
-package org.binave.play.config;
-
-import org.binave.play.config.api.Ration;
+package org.binave.play.config.api;
 
 /**
- * 补给类工厂方法
+ * 给养，补给
+ * 用于分配有限资源
  *
  * @author bin jin on 2017/4/26.
  * @since 1.8
  */
-public class RationFactory {
+public interface Ration {
 
-    public static Ration createRation(int max) {
-        return new SemaphoreRationImpl(max);
-    }
+    /**
+     * 补给
+     */
+    void supply(int size);
+
+    /**
+     * 消耗
+     * @return  available
+     */
+    int consume();
+
+    int consume(int size);
+
+    /**
+     * 可获得
+     */
+    int available();
+
 }

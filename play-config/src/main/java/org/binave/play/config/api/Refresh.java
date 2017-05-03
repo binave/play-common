@@ -14,19 +14,28 @@
  * limitations under the License.
  */
 
-package org.binave.play.config;
-
-import org.binave.play.config.api.Ration;
+package org.binave.play.config.api;
 
 /**
- * 补给类工厂方法
+ * 刷新配置
  *
- * @author bin jin on 2017/4/26.
+ * @author bin jin on 2017/4/14.
  * @since 1.8
  */
-public class RationFactory {
+interface Refresh {
 
-    public static Ration createRation(int max) {
-        return new SemaphoreRationImpl(max);
-    }
+    /**
+     * 递归深度限制
+     */
+    int RECURSION_DEPTH_LIMIT = 10;
+
+    /**
+     * 用于配置刷新
+     * @param confLoader 配置获取接口
+     * @param version    配置版本号
+     * @param override   是否完全覆盖，如果是需要先清空，之后重新加载
+     *
+     */
+    void reload(ConfLoader confLoader, long version, boolean override, String... tokens);
+
 }

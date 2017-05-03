@@ -14,19 +14,42 @@
  * limitations under the License.
  */
 
-package org.binave.play.config;
-
-import org.binave.play.config.api.Ration;
+package org.binave.play.data.api;
 
 /**
- * 补给类工厂方法
+ * 缓存接口
  *
- * @author bin jin on 2017/4/26.
+ * @author bin jin on 2017/4/20.
  * @since 1.8
  */
-public class RationFactory {
+public interface Cache {
 
-    public static Ration createRation(int max) {
-        return new SemaphoreRationImpl(max);
-    }
+    /**
+     * 地址
+     * 用于分配 pool id
+     */
+    String getUrl();
+
+    /**
+     * 放入
+     */
+    void put(Object key, Object value);
+
+    /**
+     * 取出
+     */
+    <T> T get(Object key, Class<T> type);
+
+    /**
+     * 查看是否存在
+     */
+    boolean exist(Object key);
+
+    /**
+     * 裁剪
+     *
+     * @param live  留存数
+     */
+    void trim(int live);
+
 }
