@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package org.binave.play.config;
+package org.binave.play.config.factory;
 
 import org.binave.common.collection.SyncProxy;
 import org.binave.common.collection.proxy.MapProxy;
-import org.binave.play.config.api.ShareConfMap;
+import org.binave.play.Source;
+import org.binave.play.config.util.ConfMap;
 import org.binave.play.config.args.Config;
-import org.binave.play.config.args.Configure;
+import org.binave.play.config.args.ConfigEditor;
 import org.binave.play.config.api.ConfLoader;
 
 import java.util.Collection;
@@ -35,33 +36,38 @@ import java.util.concurrent.locks.StampedLock;
  * @author bin jin on 2017/4/8.
  * @since 1.8
  */
-class ShareConfMapPoolImpl implements ShareConfMap {
+class ConfMapPoolImpl implements ConfMap {
 
     // 全局缓存
-    private static Map<String, MapProxy<Integer, Configure>> globalMapsCache = new HashMap<>();
+    private static Map<String, MapProxy<Integer, ConfigEditor>> globalMapsCache = new HashMap<>();
+
+    private Source<Map<Integer, ConfigEditor>> source;
 
     // 私有缓存
-    private Map<Integer, Configure> subMapCache;
+    private Map<Integer, ConfigEditor> subMapCache;
 
-    // 注册并绑定 token，注意如果不刷新，则无法使用
-    ShareConfMapPoolImpl(String token) {
+    /**
+     * 注册并绑定 token，注意如果不刷新，则无法使用
+     * @see ConfPoolFactory#createConfMap(String)
+     */
+    ConfMapPoolImpl(String token) {
         // 查看全局缓存里是否存在
         subMapCache = getSyncProxy(token);
     }
 
-    private MapProxy<Integer, Configure> getSyncProxy(String token) {
+    /**
+     * 刷新用
+     * 必须限定泛型
+     * @see RefreshFactory#createConfMap(Source)
+     */
+    ConfMapPoolImpl(Source<Map<Integer, ConfigEditor>> source) {
+        this.source = source;
+    }
+
+    private MapProxy<Integer, ConfigEditor> getSyncProxy(String token) {
         if (token == null) return null; // support update
-
-        MapProxy<Integer, Configure> syncProxy = globalMapsCache.get(token);
-        if (syncProxy == null) {
-
-            // new 代理类，内部为空
-            syncProxy = new MapProxy<>();
-
-            // 本地缓存
-            globalMapsCache.put(token, syncProxy);
-        }
-        return syncProxy;
+        // 本地缓存
+        return globalMapsCache.computeIfAbsent(token, k -> new MapProxy<>()); // new 代理类，内部为空
     }
 
     /**
@@ -90,18 +96,22 @@ class ShareConfMapPoolImpl implements ShareConfMap {
 
     }
 
+    @Override
+    public int size() {
+        return globalMapsCache.size();
+    }
+
     /**
      * 因为仅仅版本号变更，无需写时复制
      */
     private void updateVersion(long version) {
-
         needReadLock = true;
 
-        for (MapProxy<Integer, Configure> proxy : globalMapsCache.values()) {
+        for (MapProxy<Integer, ConfigEditor> proxy : globalMapsCache.values()) {
             if (proxy.isNull()) continue;
             long stamp = sl.writeLock();
             try {
-                for (Configure conf : proxy.values()) {
+                for (ConfigEditor conf : proxy.values()) {
                     // 更新旧的
                     if (conf.getVersion() != version) conf.setVersion(version);
                 }
@@ -113,6 +123,8 @@ class ShareConfMapPoolImpl implements ShareConfMap {
 
     private void reload(ConfLoader confLoader, long version, String... tokens) {
 
+        if (source == null) throw new RuntimeException("not init map source");
+
         SyncProxy[] proxies = new SyncProxy[tokens.length];
         Map[] maps = new Map[tokens.length];
 
@@ -122,14 +134,15 @@ class ShareConfMapPoolImpl implements ShareConfMap {
             proxies[i] = getSyncProxy(tokens[i]);
 
             // 从配置模块拿到配置
-            List<? extends Configure> configList = confLoader.loadLogicConfig(tokens[i]);
+            List<? extends ConfigEditor> configList = confLoader.loadLogicConfig(tokens[i]);
 
             if (configList == null || configList.isEmpty()) continue;
 
-            maps[i] = new HashMap<>();
+            maps[i] = source.create();
+            if (!maps[i].isEmpty()) throw new RuntimeException("Map no empty");
 
             // list -> Map
-            for (Configure con : configList) {
+            for (ConfigEditor con : configList) {
                 con.setVersion(version); // 需要把配置版本统一
                 maps[i].put(con.getKey(), con);
             }
@@ -145,22 +158,22 @@ class ShareConfMapPoolImpl implements ShareConfMap {
     @Override
     public <Conf extends Config> Conf get(int id) {
         long stamp = sl.tryOptimisticRead();
-        Configure configure = subMapCache.get(id);
+        ConfigEditor configEditor = subMapCache.get(id);
         if (needReadLock && !sl.validate(stamp)) { // 有线程在写
             stamp = sl.readLock(); // 获得悲观读锁
             try {
-                configure = subMapCache.get(id);
+                configEditor = subMapCache.get(id);
             } finally {
                 sl.unlockRead(stamp); // 释放读锁
             }
         }
-        return (Conf) configure;
+        return (Conf) configEditor;
     }
 
     @Override
     public Collection<? extends Config> values() {
         long stamp = sl.tryOptimisticRead();
-        Collection<? extends Configure> values = subMapCache.values();
+        Collection<? extends ConfigEditor> values = subMapCache.values();
         if (needReadLock && !sl.validate(stamp)) { // 有线程在写
             stamp = sl.readLock(); // 获得悲观读锁
             try {
@@ -174,7 +187,7 @@ class ShareConfMapPoolImpl implements ShareConfMap {
 
     @Override
     public String toString() {
-        return "ShareConfMapPoolImpl{" +
+        return "ConfMapPoolImpl{" +
                 "globalMapsCache=" + globalMapsCache +
                 ", subMapCache=" + subMapCache +
                 '}';

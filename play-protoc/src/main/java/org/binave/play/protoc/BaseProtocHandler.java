@@ -23,12 +23,12 @@ import com.google.protobuf.MessageLite;
 import com.google.protobuf.Parser;
 import org.binave.common.util.CharUtil;
 import org.binave.common.util.TypeUtil;
+import org.binave.play.data.args.DaoEditor;
 import org.binave.play.route.api.BaseHandler;
 import org.binave.play.route.args.DataPacket;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
-import java.util.List;
 
 /**
  * Protocol Buffers Handler
@@ -48,15 +48,15 @@ abstract public class BaseProtocHandler<Message extends GeneratedMessageLite> im
     @Override
     final public DataPacket call(DataPacket dataPacket) {
 
-        System.out.println("[BaseProtocHandler]{call}: " + dataPacket);
-
         if (dataPacket == null) throw new IllegalArgumentException(
                 this.getClass().getName()
         );
 
+        int codeNum = dataPacket.getCodeNum();
+
         // 检查传过来的指令码，检测用
-        if (dataPacket.getCodeNum() != tab()) throw new IllegalArgumentException(
-                "target code num:" + dataPacket.getCodeNum() + "!= source code num:" + tab()
+        if (codeNum != tab()) throw new IllegalArgumentException(
+                "target code num:" + codeNum + "!= source code num:" + tab()
         );
 
         byte[] data = dataPacket.getData();
@@ -67,7 +67,7 @@ abstract public class BaseProtocHandler<Message extends GeneratedMessageLite> im
         try {
             message = data != null ? (GeneratedMessageLite) getParser().parseFrom(data) : null;
         } catch (InvalidProtocolBufferException e) {
-            throw new RuntimeException(this.getClass().getName(), e); // 转换出错
+            throw new RuntimeException(e); // 转换出错
         }
 
         long id = dataPacket.getId();
@@ -76,31 +76,41 @@ abstract public class BaseProtocHandler<Message extends GeneratedMessageLite> im
         // 调用实现的逻辑，如果有异常
         Object resp = call(id, pool, (Message) message);
 
-        if (resp instanceof Builder) {
+        if (resp instanceof Builder || resp == null) {
             // 正常返回
-            return createDataPacket(id, pool, 0, tab() + 1, (Builder) resp);
+            dataPacket = createDataPacket(id, pool, 0, (Builder) resp);
         } else if (resp instanceof DataPacket) {
             // 自定义构造
-            return (DataPacket) resp;
-        } else if (resp == null) {
-            // 没有定义
-            return new DataPacket(id, pool, 0, 0, null);
+            dataPacket = (DataPacket) resp;
         } else
-            throw new IllegalArgumentException(CharUtil.replacePlaceholders(
-                    "{}", "Type error {} : {} from {}",
+            throw new IllegalArgumentException(CharUtil.format(
+                    "Type error {} : {} from {}",
                     resp.getClass().getName(), resp.toString(), this.getClass().getName()
             ));
+
+        return dataPacket;
     }
 
     /**
-     * 准备发送数据
+     * 向目标发送数据
      *
-     * @param id        session 标识
-     * @param codeId    编号
+     * @param id        用户 id
      * @param builder   数据源
      */
-    protected final DataPacket createDataPacket(long id, int pool, int status, int codeId, Builder builder) {
-        return new DataPacket(id, pool, status, codeId, builder.build().toByteArray());
+    protected final DataPacket createDataPacket(long id, int pool, int status, Builder builder) {
+        return builder != null ? new DataPacket(
+                id, pool, status,
+                // $Builder 长度为 8，从倒数第 9 个字符开始，向前找最后一个数字
+                CharUtil.getInteger(builder.getClass().getName(), -9, -1),
+                builder.build().toByteArray()
+        ) : new DataPacket(id, pool, status, 0, null);
+    }
+
+    /**
+     * 同上
+     */
+    protected final DataPacket createDataPacket(DaoEditor daoEditor, int status, Builder builder) {
+        return createDataPacket(daoEditor.getId(), daoEditor.getPool(), status, builder);
     }
 
     // 缓存
@@ -145,7 +155,7 @@ abstract public class BaseProtocHandler<Message extends GeneratedMessageLite> im
             // 没拿到
             if (type == null)
                 throw new RuntimeException(
-                        "not found generic class extends com.google.protobuf.MessageLite" +
+                        "not found generic class extends com.google.protobuf.MessageLite: " +
                                 this.getClass().getName()
                 );
         }
@@ -165,9 +175,11 @@ abstract public class BaseProtocHandler<Message extends GeneratedMessageLite> im
         if (i == 0) {
             String name = getThisGenericTypes().getSimpleName();
             // 将类名称中的数字拿出来
-            List<Integer> integers = CharUtil.getTextInteger(name);
-            if (integers.isEmpty() || (i = integers.get(0)) == null)
+            try {
+                i = CharUtil.getInteger(name, -1); // 最后一个数字
+            } catch (IllegalArgumentException e) {
                 throw new RuntimeException("class name error: " + name);
+            }
             tab = i;
         }
         return tab;

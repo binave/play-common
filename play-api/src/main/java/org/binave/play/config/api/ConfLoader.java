@@ -16,7 +16,7 @@
 
 package org.binave.play.config.api;
 
-import org.binave.play.config.args.Configure;
+import org.binave.play.config.args.ConfigEditor;
 
 import java.util.List;
 
@@ -35,10 +35,10 @@ public interface ConfLoader {
      * 获得配置列表
      * 此处获得的配置，其版本号必须已经更新
      * 注意：
-     *      序列化不支持类型不一致的参数集合 {@link Configure}。
-     *      需要保证 {@link Configure} 在集合中的实现类型相同
+     *      序列化不支持类型不一致的参数集合 {@link ConfigEditor}。
+     *      需要保证 {@link ConfigEditor} 在集合中的实现类型相同
      */
-    List<? extends Configure> loadLogicConfig(String token);
+    List<? extends ConfigEditor> loadLogicConfig(String token);
 
     /**
      * 使用键值对方式获取基本配置

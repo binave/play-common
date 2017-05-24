@@ -14,38 +14,22 @@
  * limitations under the License.
  */
 
-package org.binave.play.data.api;
+package org.binave.play.config.util;
+
+import org.binave.play.config.args.Config;
+
+import java.util.Collection;
 
 /**
- * id 、pool 分配器
+ * 获得针对关键字的配置
  *
- * [module interface]
- *
- * @author bin jin on 2017/4/13.
+ * @author bin jin on 2017/4/14.
  * @since 1.8
  */
-public interface Allocator {
+public interface ConfMap extends Refresh {
 
-    /**
-     * 生成全局唯一 id
-     */
-    long adder();
+    <Conf extends Config> Conf get(int id);
 
-    /**
-     * 生成 pool id
-     */
-    int createPoolId();
-
-    /**
-     * 查看是否有过去的 id
-     * 用于倒库
-     */
-    int lastPoolId(int currentPoolId);
-
-    /**
-     * 查看是否有新 pool
-     * 用于倒库
-     */
-    int latestPoolId(int currentPoolId);
+    Collection<? extends Config> values();
 
 }

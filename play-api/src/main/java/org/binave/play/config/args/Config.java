@@ -27,6 +27,8 @@ package org.binave.play.config.args;
  */
 public interface Config {
 
+    int getId();
+
     /**
      * 获得第一个 key，
      * 一般为 excel 的 key

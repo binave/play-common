@@ -18,8 +18,6 @@ package org.binave.play.config.api;
 
 import org.binave.play.config.args.UpdateNotice;
 
-import java.util.Set;
-
 /**
  * 更新通知
  * 实现：订阅者
@@ -44,6 +42,6 @@ public interface UpdateNotify {
     /**
      * 获得实现者的页签
      */
-    Set<String> tab();
+    String[] tab();
 
 }

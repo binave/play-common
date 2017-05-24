@@ -14,28 +14,42 @@
  * limitations under the License.
  */
 
-package org.binave.play.config.args;
+package org.binave.play.data.args;
 
 /**
- * 所有的配置实体都要实现此接口
- * 用于设置者使用，
- * 获取者不应当使用这个接口
+ * 数据库对象接口
  *
  * [module args]
  *
- * @author bin jin on 2017/3/24.
+ * @author bin jin on 2017/4/11.
  * @since 1.8
  */
-public interface Configure extends Config {
+public abstract class DaoEditor implements Dao {
 
     /**
-     * 将 join，和其他配置初始化处理放入其中
+     * 由全局 id 分配逻辑进行调用
      */
-    void init();
+    abstract public void setId(long id);
 
     /**
-     * 由框架进行配置
+     * 由 pool 分配逻辑调用
      */
-    void setVersion(long version);
+    abstract public void setPool(int pool);
+
+    /**
+     * 用于 {@link java.util.Map} 索引
+     */
+    @Override
+    public int hashCode() {
+        return Long.hashCode(getId());
+    }
+
+    /**
+     * 用于 {@link java.util.Map} 索引
+     */
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof Access && getId() == ((Access) obj).getId();
+    }
 
 }

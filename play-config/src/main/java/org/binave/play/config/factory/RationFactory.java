@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.binave.play.config;
+package org.binave.play.config.factory;
 
 import org.binave.play.config.api.Ration;
 

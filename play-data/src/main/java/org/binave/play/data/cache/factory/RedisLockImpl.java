@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.binave.play.data.cache;
+package org.binave.play.data.cache.factory;
 
 import org.binave.play.data.api.Lock;
 import redis.clients.jedis.Jedis;
@@ -27,6 +27,7 @@ import java.util.Random;
 
 /**
  * 单点分布式锁实现
+ * 使用 lua 脚本保证原子性
  *
  * @author bin jin on 2017/4/21.
  * @since 1.8
@@ -158,14 +159,6 @@ public class RedisLockImpl implements Lock {
                     String.valueOf(stamp)
             );
             stampMap.remove(stamp);
-        }
-    }
-
-    static byte[] getBytes(Object arg) {
-        try {
-            return arg == null ? null : arg.toString().getBytes("UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
         }
     }
 

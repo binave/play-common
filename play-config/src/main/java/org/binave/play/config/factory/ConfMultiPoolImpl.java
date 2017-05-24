@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package org.binave.play.config;
+package org.binave.play.config.factory;
 
 import org.binave.common.collection.SyncProxy;
 import org.binave.common.collection.proxy.MultimapProxy;
-import org.binave.play.config.api.ShareConfMulti;
+import org.binave.play.Source;
+import org.binave.play.config.util.ConfMulti;
 import org.binave.play.config.args.Config;
-import org.binave.play.config.args.Configure;
+import org.binave.play.config.args.ConfigEditor;
 import org.binave.play.config.api.ConfLoader;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
 import java.util.Collection;
@@ -37,35 +37,39 @@ import java.util.concurrent.locks.StampedLock;
  * @author bin jin on 2017/4/12.
  * @since 1.8
  */
-class ShareConfMultiPoolImpl implements ShareConfMulti {
+class ConfMultiPoolImpl implements ConfMulti {
 
     // 全局缓存
-    private static Map<String, MultimapProxy<Integer, Configure>> globalMultiMapsCache = new HashMap<>();
+    private static Map<String, MultimapProxy<Integer, ConfigEditor>> globalMultiMapsCache = new HashMap<>();
 
-    private Multimap<Integer, Configure> subMultimap;
+    private Multimap<Integer, ConfigEditor> subMultimap;
 
-    ShareConfMultiPoolImpl(String token) {
+    private Source<Multimap<Integer, ConfigEditor>> source;
+
+    private static boolean needReadLock = false;
+
+    private static final StampedLock sl = new StampedLock();
+
+    /**
+     * @see ConfPoolFactory#createConfMulti(String)
+     */
+    ConfMultiPoolImpl(String token) {
         subMultimap = getSyncProxy(token);
     }
 
-    private MultimapProxy<Integer, Configure> getSyncProxy(String token) {
-        if (token == null) return null; // support update
-
-        MultimapProxy<Integer, Configure> syncProxy = globalMultiMapsCache.get(token);
-        if (syncProxy == null) {
-
-            // new 代理类，内部为空
-            syncProxy = new MultimapProxy<>();
-
-            // 本地缓存
-            globalMultiMapsCache.put(token, syncProxy);
-        }
-        return syncProxy;
+    /**
+     * 刷新用
+     * @see RefreshFactory#createConfMulti(Source)
+     */
+    ConfMultiPoolImpl(Source<Multimap<Integer, ConfigEditor>> source) {
+        this.source = source;
     }
 
-    private static boolean needReadLock = false;
-    private static final StampedLock sl = new StampedLock();
-
+    private MultimapProxy<Integer, ConfigEditor> getSyncProxy(String token) {
+        if (token == null) return null; // support update
+        // 本地缓存
+        return globalMultiMapsCache.computeIfAbsent(token, k -> new MultimapProxy<>()); // new 代理类，内部为空
+    }
 
     @Override
     public synchronized void reload(ConfLoader confLoader, long version, boolean override, String... tokens) {
@@ -85,6 +89,11 @@ class ShareConfMultiPoolImpl implements ShareConfMulti {
 
     }
 
+    @Override
+    public int size() {
+        return globalMultiMapsCache.size();
+    }
+
 
     /**
      * 因为仅仅版本号变更，无需写时复制
@@ -93,11 +102,11 @@ class ShareConfMultiPoolImpl implements ShareConfMulti {
 
         needReadLock = true;
 
-        for (MultimapProxy<Integer, Configure> proxy : globalMultiMapsCache.values()) {
+        for (MultimapProxy<Integer, ConfigEditor> proxy : globalMultiMapsCache.values()) {
             if (proxy.isNull()) continue;
             long stamp = sl.writeLock();
             try {
-                for (Configure conf : proxy.values()) {
+                for (ConfigEditor conf : proxy.values()) {
                     // 更新旧的
                     if (conf.getVersion() != version) conf.setVersion(version);
                 }
@@ -108,7 +117,9 @@ class ShareConfMultiPoolImpl implements ShareConfMulti {
     }
 
     // 刷新配置
-    public void reload(ConfLoader confLoader, long version, String... tokens) {
+    private void reload(ConfLoader confLoader, long version, String... tokens) {
+
+        if (source == null) throw new RuntimeException("not init Multimap source");
 
         if (confLoader == null || tokens == null || tokens.length == 0)
             throw new RuntimeException();
@@ -121,14 +132,15 @@ class ShareConfMultiPoolImpl implements ShareConfMulti {
             // 拿到 Table 代理
             proxies[i] = getSyncProxy(tokens[i]);
 
-            List<? extends Configure> configList = confLoader.loadLogicConfig(tokens[i]);
+            List<? extends ConfigEditor> configList = confLoader.loadLogicConfig(tokens[i]);
 
             if (configList == null || configList.isEmpty()) continue;
 
-            multiMaps[i] = ArrayListMultimap.create();
+            multiMaps[i] = source.create();
+            if (!multiMaps[i].isEmpty()) throw new RuntimeException("multiMaps not empty");
 
             // list -> multimap
-            for (Configure con : configList) {
+            for (ConfigEditor con : configList) {
                 con.setVersion(version);
                 multiMaps[i].put(con.getKey(), con);
             }
@@ -143,21 +155,21 @@ class ShareConfMultiPoolImpl implements ShareConfMulti {
     @Override
     public <Conf extends Config> Collection<Conf> get(int id) {
         long stamp = sl.tryOptimisticRead();
-        Collection<Configure> configures = subMultimap.get(id);
+        Collection<ConfigEditor> configEditors = subMultimap.get(id);
         if (needReadLock && !sl.validate(stamp)) { // 有线程在写
             stamp = sl.readLock(); // 获得悲观读锁
             try {
-                configures = subMultimap.get(id);
+                configEditors = subMultimap.get(id);
             } finally {
                 sl.unlockRead(stamp); // 释放读锁
             }
         }
-        return (Collection<Conf>) configures;
+        return (Collection<Conf>) configEditors;
     }
 
     @Override
     public String toString() {
-        return "ShareConfMultiPoolImpl{" +
+        return "ConfMultiPoolImpl{" +
                 "globalMultiMapsCache=" + globalMultiMapsCache +
                 ", subMultimap=" + subMultimap +
                 '}';

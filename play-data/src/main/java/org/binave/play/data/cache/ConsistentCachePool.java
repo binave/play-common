@@ -13,6 +13,7 @@ import java.util.TreeMap;
 /**
  * 基于一致性 hash 的缓存池
  *
+ * todo 需要进行边界测试
  * @author by bin jin on 2017/5/17.
  * @since 1.8
  */

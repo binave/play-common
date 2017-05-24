@@ -13,7 +13,7 @@ import lombok.*;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class Access extends Dao {
+public class Access extends DaoEditor {
 
     private long id;
 

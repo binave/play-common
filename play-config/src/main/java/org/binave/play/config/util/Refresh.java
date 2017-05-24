@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package org.binave.play.config.api;
+package org.binave.play.config.util;
+
+import org.binave.play.config.api.ConfLoader;
 
 /**
  * 刷新配置
@@ -22,7 +24,7 @@ package org.binave.play.config.api;
  * @author bin jin on 2017/4/14.
  * @since 1.8
  */
-interface Refresh {
+public interface Refresh {
 
     /**
      * 递归深度限制
@@ -37,5 +39,10 @@ interface Refresh {
      *
      */
     void reload(ConfLoader confLoader, long version, boolean override, String... tokens);
+
+    /**
+     * 总大小
+     */
+    int size();
 
 }

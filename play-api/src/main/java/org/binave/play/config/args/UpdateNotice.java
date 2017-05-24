@@ -20,10 +20,19 @@ import java.util.Set;
 @AllArgsConstructor
 public class UpdateNotice {
 
+    /**
+     * 版本号，用于确定关联配版本一致性问题
+     */
     private long version;
 
+    /**
+     * 是否进行覆盖更新
+     */
     private boolean override;
 
-    private Set<String> tokens;
+    /**
+     * 更新目标
+     */
+    private String[] tokens;
 
 }

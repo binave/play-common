@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.binave.play.data.db;
+package org.binave.play.data.db.factory;
 
 import org.binave.play.data.args.DBConfig;
 

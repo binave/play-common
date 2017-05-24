@@ -14,41 +14,19 @@
  * limitations under the License.
  */
 
-package org.binave.play.config;
+package org.binave.play.config.util;
+
+import org.binave.play.config.args.Config;
+
+import java.util.Collection;
 
 /**
- * 与配置类型一一对应。
- * 用于配置更新
+ * 获得基于关键词的 ap 的值为集合
  *
- * @author bin jin on 2017/4/5.
+ * @author bin jin on 2017/4/14.
  * @since 1.8
  */
-class SubEntry {
+public interface ConfMulti extends Refresh {
 
-    private long version;
-    private int head;
-    private int tail;
-
-    SubEntry(long version, int head, int tail) {
-        this.version = version;
-        this.head = head;
-        this.tail = tail;
-    }
-
-    void setVersion(long version) {
-        this.version = version;
-    }
-
-    int getHead() {
-        return head;
-    }
-
-    int getTail() {
-        return tail;
-    }
-
-    long getVersion() {
-        return version;
-    }
-
+    <Conf extends Config> Collection<Conf> get(int id);
 }

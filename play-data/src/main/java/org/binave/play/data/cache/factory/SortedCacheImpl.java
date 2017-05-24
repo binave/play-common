@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.binave.play.data.cache;
+package org.binave.play.data.cache.factory;
 
 import org.binave.common.serialize.Codec;
+import org.binave.common.util.CharUtil;
 import org.binave.common.util.FutureTime;
 import org.binave.play.data.api.Cache;
 import redis.clients.jedis.Jedis;
@@ -27,6 +28,7 @@ import java.util.Set;
 
 /**
  * 常驻缓存，将保存规定序列
+ * todo 将会修改成 lua 脚本，以减少通信次数和保证原子性
  *
  * @author bin jin on 2017/4/18.
  * @since 1.8
@@ -63,8 +65,8 @@ class SortedCacheImpl implements Cache {
         this.url = jedis.getClient().getHost() + jedis.getDB();
         this.futureTime = futureTime;
         this.redis = jedis.pipelined();
-        SortedMainKey = CycleImplImpl.getBytes(SORTED_PREFIX + key);
-        HashMainKey = CycleImplImpl.getBytes(HASH_PREFIX + key);
+        SortedMainKey = CharUtil.toBytes(SORTED_PREFIX + key);
+        HashMainKey = CharUtil.toBytes(HASH_PREFIX + key);
         this.index = index;
         this.codec = codec;
     }
@@ -74,21 +76,39 @@ class SortedCacheImpl implements Cache {
         return System.currentTimeMillis() - BEGIN_TIME;
     }
 
+    /**
+     * @return {@link Boolean}
+     */
     @Override
-    public void put(Object key, Object value) {
-        byte[] keyBytes = CycleImplImpl.getBytes(key);
+    public Object put(Object key, Object value) {
+        byte[] keyBytes = CharUtil.toBytes(key);
         byte[] valueBytes = codec.encode(value);
         redis.hset(HashMainKey, keyBytes, valueBytes);
         redis.zadd(SortedMainKey, auto(), keyBytes);
         redis.sync();
+        return true;
     }
 
+    /**
+     * @return {@link Boolean}
+     */
+    @Override
+    public Object remove(Object key) {
+        byte[] keyBytes = CharUtil.toBytes(key);
+        redis.zrem(SortedMainKey, keyBytes);
+        redis.hdel(HashMainKey, keyBytes);
+        redis.sync();
+        return false;
+    }
+
+    /**
+     * todo 支持基本类型
+     */
     @Override
     public <T> T get(Object key, Class<T> type) {
 
         // 获取时刷新权重值
-
-        byte[] keyBytes = CycleImplImpl.getBytes(key);
+        byte[] keyBytes = CharUtil.toBytes(key);
 
         Response<byte[]> hgetResp = redis.hget(HashMainKey, keyBytes);
         redis.zadd(SortedMainKey, auto(), keyBytes);

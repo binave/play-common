@@ -17,54 +17,24 @@
 package org.binave.play.data.args;
 
 /**
- * 数据库对象接口
- *
- * [module args]
- *
- * @author bin jin on 2017/4/11.
+ * @author by bin jin on 2017/6/3.
  * @since 1.8
  */
-public abstract class Dao {
+public interface Dao {
 
     /**
      * 获得全局 ID，
      * 由全局 id 分配逻辑进行分配
      * 额外支持灰度
      */
-    abstract public long getId();
-
-    /**
-     * 由全局 id 分配逻辑进行调用
-     */
-    abstract public void setId(long id);
+    long getId();
 
     /**
      * 获得逻辑 pool ID
      * 用于分配数据库，
      * 需要请求进行携带，以支持无状态
      */
-    abstract public int getPool();
-
-    /**
-     * 由 pool 分配逻辑调用
-     */
-    abstract public void setPool(int pool);
-
-    /**
-     * 用于 {@link java.util.Map} 索引
-     */
-    @Override
-    public int hashCode() {
-        return Long.hashCode(getId());
-    }
-
-    /**
-     * 用于 {@link java.util.Map} 索引
-     */
-    @Override
-    public boolean equals(Object obj) {
-        return obj instanceof Access && getId() == ((Access) obj).getId();
-    }
+    int getPool();
 
     /**
      * 获得属性参数
@@ -72,6 +42,6 @@ public abstract class Dao {
      *
      * e.g. new Object[]{id, name, age, sex, data};
      */
-    abstract public Object[] getParams();
+    Object[] getParams();
 
 }

@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package org.binave.play.config;
+package org.binave.play.config.factory;
 
 import org.binave.common.collection.SyncProxy;
 import org.binave.common.collection.proxy.TableProxy;
-import org.binave.play.config.api.ShareConfTable;
+import org.binave.play.Source;
+import org.binave.play.config.util.ConfTable;
 import org.binave.play.config.args.Config;
-import org.binave.play.config.args.Configure;
+import org.binave.play.config.args.ConfigEditor;
 import org.binave.play.config.api.ConfLoader;
-import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 
 import java.util.HashMap;
@@ -40,30 +40,37 @@ import java.util.concurrent.locks.StampedLock;
  * @author bin jin on 2017/4/7.
  * @since 1.8
  */
-class ShareConfTablePoolImpl implements ShareConfTable {
+class ConfTablePoolImpl implements ConfTable {
 
     // 全局缓存
-    private static Map<String, TableProxy<Integer, Integer, Configure>> globalTablesCache = new HashMap<>();
+    private static Map<String, TableProxy<Integer, Integer, ConfigEditor>> globalTablesCache = new HashMap<>();
 
     // 私有缓存
-    private Table<Integer, Integer, Configure> subTableCache;
+    private Table<Integer, Integer, ConfigEditor> subTableCache;
 
-    // 注册并绑定 token，注意如果不刷新，则无法使用
-    ShareConfTablePoolImpl(String token) {
+    private Source<Table<Integer, Integer, ConfigEditor>> source;
+
+    /**
+     * 注册并绑定 token，注意如果不刷新，则无法使用
+     * @see ConfPoolFactory#createConfTable(String)
+     */
+    ConfTablePoolImpl(String token) {
         // 查看全局缓存里是否存在
         subTableCache = getSyncProxy(token);
-
     }
 
-    private TableProxy<Integer, Integer, Configure> getSyncProxy(String token) {
-        if (token == null) return null; // support update
+    /**
+     * 刷新用
+     * @see RefreshFactory#createConfTable(Source)
+     */
+    ConfTablePoolImpl(Source<Table<Integer, Integer, ConfigEditor>> source) {
+        this.source = source;
+    }
 
-        TableProxy<Integer, Integer, Configure> syncProxy = globalTablesCache.get(token);
-        if (syncProxy == null) {
-            syncProxy = new TableProxy<>(); // new 代理类，内部为空
-            globalTablesCache.put(token, syncProxy); // 本地缓存
-        }
-        return syncProxy;
+    private TableProxy<Integer, Integer, ConfigEditor> getSyncProxy(String token) {
+        if (token == null) return null; // support update
+        // 本地缓存
+        return globalTablesCache.computeIfAbsent(token, k -> new TableProxy<>()); // new 代理类，内部为空
     }
 
     private static boolean needReadLock = false;
@@ -85,6 +92,11 @@ class ShareConfTablePoolImpl implements ShareConfTable {
         }
     }
 
+    @Override
+    public int size() {
+        return globalTablesCache.size();
+    }
+
 
     /**
      * 因为仅仅版本号变更，无需写时复制
@@ -92,11 +104,11 @@ class ShareConfTablePoolImpl implements ShareConfTable {
     private void updateVersion(long version) {
 
         needReadLock = true;
-        for (TableProxy<Integer, Integer, Configure> proxy : globalTablesCache.values()) {
+        for (TableProxy<Integer, Integer, ConfigEditor> proxy : globalTablesCache.values()) {
             if (proxy.isNull()) continue;
             long stamp = sl.writeLock();
             try {
-                for (Configure conf : proxy.values()) {
+                for (ConfigEditor conf : proxy.values()) {
                     // 更新旧的
                     if (conf.getVersion() != version) conf.setVersion(version);
                 }
@@ -121,6 +133,8 @@ class ShareConfTablePoolImpl implements ShareConfTable {
         if (confLoader == null || tokens == null || tokens.length == 0)
             throw new RuntimeException();
 
+        if (source == null) throw new RuntimeException("not init table source");
+
         SyncProxy[] proxies = new SyncProxy[tokens.length];
         Table[] tables = new Table[tokens.length];
 
@@ -130,14 +144,15 @@ class ShareConfTablePoolImpl implements ShareConfTable {
             proxies[i] = getSyncProxy(tokens[i]);
 
             // 从配置模块获得配置
-            List<? extends Configure> confList = confLoader.loadLogicConfig(tokens[i]);
+            List<? extends ConfigEditor> confList = confLoader.loadLogicConfig(tokens[i]);
 
             if (confList == null || confList.isEmpty()) continue;
 
-            tables[i] = HashBasedTable.create(); // 空 table
+            tables[i] = source.create(); // 空 table
+            if (!tables[i].isEmpty()) throw new RuntimeException("Table no empty!");
 
             // list -> table
-            for (Configure con : confList) {
+            for (ConfigEditor con : confList) {
                 if (con.getExtKey() != -1) {// 不支持扩展 key
                     con.setVersion(version);
                     tables[i].put(con.getKey(), con.getExtKey(), con);
@@ -155,22 +170,22 @@ class ShareConfTablePoolImpl implements ShareConfTable {
     @Override
     public <Conf extends Config> Conf get(int id, int extId) {
         long stamp = sl.tryOptimisticRead(); // 这个不需要关闭
-        Configure configure = subTableCache.get(id, extId);
+        ConfigEditor configEditor = subTableCache.get(id, extId);
         if (needReadLock && !sl.validate(stamp)) { // 有线程在写
             stamp = sl.readLock(); // 获得悲观读锁
             try {
-                configure = subTableCache.get(id, extId);
+                configEditor = subTableCache.get(id, extId);
             } finally {
                 sl.unlockRead(stamp); // 释放读锁
             }
         }
-        return (Conf) configure;
+        return (Conf) configEditor;
     }
 
     @Override
     public Map<Integer, ? extends Config> row(int rowKey) {
         long stamp = sl.tryOptimisticRead();
-        Map<Integer, ? extends Configure> row = subTableCache.row(rowKey);
+        Map<Integer, ? extends ConfigEditor> row = subTableCache.row(rowKey);
         if (needReadLock && !sl.validate(stamp)) {
             stamp = sl.readLock();
             try {
@@ -184,7 +199,7 @@ class ShareConfTablePoolImpl implements ShareConfTable {
 
     @Override
     public String toString() {
-        return "ShareConfTablePoolImpl{" +
+        return "ConfTablePoolImpl{" +
                 "globalTablesCache=" + globalTablesCache +
                 ", subTableCache=" + subTableCache +
                 '}';

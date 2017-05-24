@@ -25,7 +25,7 @@ import java.util.List;
  * @author bin jin on 2017/4/13.
  * @since 1.8
  */
-public interface DBConnect<D> extends DBTransact<D> {
+public interface DBConnect<D> {
 
     long getVersion();
 
@@ -34,7 +34,7 @@ public interface DBConnect<D> extends DBTransact<D> {
     /**
      * 增加数据
      */
-    void add(D param) throws SQLException;
+    int add(D... params) throws SQLException;
 
     /**
      * 更新数据

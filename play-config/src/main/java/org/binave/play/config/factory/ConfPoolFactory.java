@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.binave.play.config;
+package org.binave.play.config.factory;
 
-import org.binave.play.config.api.SpaceConfMap;
-import org.binave.play.config.api.ShareConfMap;
-import org.binave.play.config.api.ShareConfMulti;
-import org.binave.play.config.api.ShareConfTable;
+import org.binave.play.config.util.ConfTable;
+import org.binave.play.config.util.SpaceConfMap;
+import org.binave.play.config.util.ConfMap;
+import org.binave.play.config.util.ConfMulti;
 
 /**
  * 获得配置管理类
@@ -40,18 +40,18 @@ public class ConfPoolFactory {
         return new SpaceConfMapPoolImpl();
     }
 
-    public static ShareConfMap createShareConfMap(String token) {
-        return new ShareConfMapPoolImpl(token);
+    public static ConfMap createConfMap(String token) {
+        return new ConfMapPoolImpl(token);
     }
 
     // Table
-    public static ShareConfTable createShareConfTable(String token) {
-        return new ShareConfTablePoolImpl(token);
+    public static ConfTable createConfTable(String token) {
+        return new ConfTablePoolImpl(token);
     }
 
     // MultiMap
-    public static ShareConfMulti createShareConfMulti(String token) {
-        return new ShareConfMultiPoolImpl(token);
+    public static ConfMulti createConfMulti(String token) {
+        return new ConfMultiPoolImpl(token);
     }
 
 }

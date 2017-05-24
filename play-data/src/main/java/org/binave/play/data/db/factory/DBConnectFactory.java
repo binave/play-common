@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.binave.play.data.db;
+package org.binave.play.data.db.factory;
 
 import org.binave.common.util.CharUtil;
+import org.binave.play.data.api.DBTransact;
 import org.binave.play.data.args.DBConfig;
 import org.binave.play.data.api.DBConnect;
 import org.binave.play.data.args.Dao;
-import org.binave.play.data.db.DBConnectImpl;
-import org.binave.play.data.db.SimpleDBConfigImpl;
+import org.binave.play.data.args.SqlFactory;
 
 import java.sql.SQLException;
 import java.util.Map;
@@ -37,16 +37,28 @@ public class DBConnectFactory {
     /**
      * 获得基础数据库工具
      */
-    public static DBConnect<Dao> createDBConnect(DBConfig dbConfig) {
+    public static DBConnect<Dao> createDBConnect(DBConfig dbConfig, SqlFactory<Dao> sqlFactory) {
         try {
-            return new DBConnectImpl(dbConfig);
+            return new SimpleDBConnectImpl(dbConfig, sqlFactory);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static DBConnect<Dao> createDBConnect(String jdbcUrl) {
-        return createDBConnect(getSimpleDataSource(jdbcUrl));
+    public static DBConnect<Dao> createDBConnect(String jdbcUrl, SqlFactory<Dao> sqlFactory) {
+        return createDBConnect(getSimpleDataSource(jdbcUrl), sqlFactory);
+    }
+
+    public static DBTransact<Dao> createDBTransact(DBConfig dbConfig, SqlFactory<Dao> sqlFactory) {
+        try {
+            return new SimpleDBConnectImpl(dbConfig, sqlFactory);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static DBTransact<Dao> createDBTransact(String jdbcUrl, SqlFactory<Dao> sqlFactory) {
+        return createDBTransact(getSimpleDataSource(jdbcUrl), sqlFactory);
     }
 
     /**
@@ -86,68 +98,5 @@ public class DBConnectFactory {
 
         return basicDataSource;
     }
-
-
-    /**
-     * 组装插入 SQL
-     *
-     * @param name      表名
-     * @param fields    字段名数组
-     */
-    static String getInsertSql(String name, String[] fields) {
-        return CharUtil.replacePlaceholders(
-                "{}",
-                "INSERT INTO {} ({}) VALUES ({})",
-                name,
-                CharUtil.join(", ", null, fields, null),
-                CharUtil.join(", ", "?", fields.length)
-        );
-    }
-
-    /**
-     * 组装更新 SQL
-     *
-     * @param name      表名
-     * @param fields    字段名数组
-     */
-    static String getUpdateSql(String name, String[] fields) {
-        return CharUtil.replacePlaceholders(
-                "{}",
-                "UPDATE {} SET {} WHERE ",
-                name,
-                CharUtil.join(", ", null, fields, " = ?")
-        );
-    }
-
-    /**
-     * 组装查询 SQL
-     *
-     * @param name      表名
-     * @param fields    字段名数组
-     */
-    static String getSelectSql(String name, String[] fields) {
-        return CharUtil.replacePlaceholders(
-                "{}",
-                "SELECT {} FROM {}",
-                CharUtil.join(", ", null, fields, null),
-                name
-        );
-    }
-
-    /**
-     * 组装计数器 SQL
-     *
-     * @param name      表名
-     * @param field     目标字段名称
-     */
-    static String getCountSql(String name, String field) {
-        return CharUtil.replacePlaceholders(
-                "{}",
-                "SELECT count({}) FROM {}",
-                field,
-                name
-        );
-    }
-
 
 }

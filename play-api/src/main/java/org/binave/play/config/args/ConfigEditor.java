@@ -14,21 +14,28 @@
  * limitations under the License.
  */
 
-package org.binave.play.config.api;
-
-import org.binave.play.config.args.Config;
-
-import java.util.Map;
+package org.binave.play.config.args;
 
 /**
- * 获得基于关键词的配置
+ * 所有的配置实体都要实现此接口
+ * 用于设置者使用，
+ * 获取者不应当使用这个接口
  *
- * @author bin jin on 2017/4/14.
+ * [module args]
+ *
+ * @author bin jin on 2017/3/24.
  * @since 1.8
  */
-public interface ShareConfTable extends Refresh {
+public interface ConfigEditor extends Config {
 
-    <Conf extends Config> Conf get(int id, int extId);
+    /**
+     * 将 join，和其他配置初始化处理放入其中
+     */
+    void init();
 
-    Map<Integer, ? extends Config> row(int rowKey);
+    /**
+     * 由框架进行配置
+     */
+    void setVersion(long version);
+
 }

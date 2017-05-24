@@ -14,22 +14,29 @@
  * limitations under the License.
  */
 
-package org.binave.play.config.api;
+package org.binave.play.config.util;
 
 import org.binave.play.config.args.Config;
 
 import java.util.Collection;
 
 /**
- * 获得针对关键字的配置
+ * 全局 Map
+ * 仅支持 id 具有唯一性的配置
  *
  * @author bin jin on 2017/4/14.
  * @since 1.8
  */
-public interface ShareConfMap extends Refresh {
+public interface SpaceConfMap extends ConfMap {
 
+    /**
+     * 获得配置
+     */
     <Conf extends Config> Conf get(int id);
 
-    Collection<? extends Config> values();
+    /**
+     * 获得配置列表
+     */
+    Collection<? extends Config> get(String token);
 
 }

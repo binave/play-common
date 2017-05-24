@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.binave.play.data.cache;
+package org.binave.play.data.cache.factory;
 
 import org.binave.play.data.api.Adder;
 import org.binave.play.data.api.Cache;
@@ -22,9 +22,7 @@ import org.binave.play.data.api.Cache;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.PriorityBlockingQueue;
 
 /**
  * 本地有界限缓存
@@ -48,10 +46,10 @@ public class LocalBoundedCacheImpl implements Cache, Adder {
     }
 
     @Override
-    public void put(Object key, Object value) {
+    public Object put(Object key, Object value) {
         if (key == null || value == null) throw new NullPointerException();
+        return map.put(key, value);
 
-        map.put(key, value);
 
 //        synchronized (key) {
 //            SortedEntry entry = map.get(key);
@@ -67,6 +65,11 @@ public class LocalBoundedCacheImpl implements Cache, Adder {
 //                // 排序
 //            }
 //        }
+    }
+
+    @Override
+    public Object remove(Object key) {
+        return map.remove(key);
     }
 
     @Override

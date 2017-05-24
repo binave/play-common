@@ -33,7 +33,12 @@ public interface Cache {
     /**
      * 放入
      */
-    void put(Object key, Object value);
+    Object put(Object key, Object value);
+
+    /**
+     * 删除
+     */
+    Object remove(Object key);
 
     /**
      * 取出

@@ -45,12 +45,17 @@ public class CacheProxy implements Cache, SyncProxy<Cache> {
 
     @Override
     public String getUrl() {
-        return cache.getUrl();
+        return this.cache.getUrl();
     }
 
     @Override
-    public void put(Object key, Object value) {
-        this.cache.put(key, value);
+    public Object put(Object key, Object value) {
+        return this.cache.put(key, value);
+    }
+
+    @Override
+    public Object remove(Object key) {
+        return this.cache.remove(key);
     }
 
     @Override
@@ -70,7 +75,7 @@ public class CacheProxy implements Cache, SyncProxy<Cache> {
 
     @Override
     public String toString() {
-        return cache != null ? cache.toString() : "NULL";
+        return this.cache != null ? this.cache.toString() : "NULL";
     }
 
     // 对比 url
@@ -81,7 +86,7 @@ public class CacheProxy implements Cache, SyncProxy<Cache> {
 
     @Override
     public int hashCode() {
-        return cache != null ? cache.hashCode() : -1;
+        return this.cache != null ? this.cache.hashCode() : -1;
     }
 
 }

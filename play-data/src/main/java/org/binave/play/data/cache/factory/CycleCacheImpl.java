@@ -14,21 +14,25 @@
  * limitations under the License.
  */
 
-package org.binave.play.data.cache;
+package org.binave.play.data.cache.factory;
 
+import org.binave.common.util.CharUtil;
 import org.binave.play.data.api.Cache;
 import org.binave.common.serialize.Codec;
 import org.binave.common.util.FutureTime;
 import org.binave.play.data.api.Adder;
 import redis.clients.jedis.Jedis;
 
+import java.util.Objects;
+
 /**
  * 保存自然周期内有效的缓存
+ * 所有 key 均为顶级存储
  *
  * @author bin jin on 2017/4/20.
  * @since 1.8
  */
-class CycleImplImpl extends RedisLockImpl implements Cache, Adder {
+class CycleCacheImpl extends RedisLockImpl implements Cache, Adder {
 
     private String url;
     private Jedis redis;
@@ -36,7 +40,7 @@ class CycleImplImpl extends RedisLockImpl implements Cache, Adder {
     private int index;
     private Codec codec;
 
-    CycleImplImpl(Jedis redis, FutureTime futureTime, int index, Codec codec) {
+    CycleCacheImpl(Jedis redis, FutureTime futureTime, int index, Codec codec) {
         super(redis);
 
         this.redis = redis;
@@ -51,32 +55,54 @@ class CycleImplImpl extends RedisLockImpl implements Cache, Adder {
         return url;
     }
 
+    /**
+     * @return {@link Boolean}
+     */
     @Override
-    public void put(Object key, Object value) {
+    public Object put(Object key, Object value) {
         int sec = futureTime.getSeconds(index, 1, true, true);
         if (value instanceof Number) {
-            redis.setex(key.toString(), sec, String.valueOf(value));
+            return "OK".equals(
+                    redis.setex(key.toString(), sec, String.valueOf(value))
+            );
         } else {
-            byte[] keyBytes = getBytes(key);
-            redis.setex(
-                    keyBytes,
-                    sec,
-                    codec.encode(value)
+            byte[] keyBytes = CharUtil.toBytes(key);
+            return "OK".equals(
+                    redis.setex(
+                            keyBytes,
+                            sec,
+                            codec.encode(value)
+                    )
             );
         }
     }
 
+    /**
+     * @return {@link Boolean}
+     */
+    @Override
+    public Object remove(Object key) {
+        return 1 == redis.del(CharUtil.toBytes(key));
+    }
+
     @Override
     public <T> T get(Object key, Class<T> type) {
-        byte[] values = redis.get(getBytes(key));
-        if (values == null) return null;
-        return codec.decode(values, type);
+        if (String.class.equals(type)) {
+            return (T) redis.get(Objects.toString(key));
+        } else if (Number.class.isAssignableFrom(type)) {
+            String value = redis.get(Objects.toString(key));
+            return (T) Integer.valueOf(value.replaceAll("\\..*", ""));
+        } else {
+            byte[] values = redis.get(CharUtil.toBytes(key));
+            if (values == null) return null;
+            return codec.decode(values, type);
+        }
     }
 
 
     @Override
     public boolean exist(Object key) {
-        return redis.exists(getBytes(key));
+        return redis.exists(CharUtil.toBytes(key));
     }
 
     @Override
@@ -102,7 +128,7 @@ class CycleImplImpl extends RedisLockImpl implements Cache, Adder {
 
     @Override
     public String toString() {
-        return "CycleImplImpl{" +
+        return "CycleCacheImpl{" +
                 "url='" + url + '\'' +
                 ", futureTime=" + futureTime +
                 ", index=" + index +

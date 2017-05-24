@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.binave.play.config;
+package org.binave.play.config.factory;
 
 import org.binave.common.collection.IndexMap;
-import org.binave.play.config.api.SpaceConfMap;
+import org.binave.common.util.CharUtil;
+import org.binave.play.config.util.SpaceConfMap;
 import org.binave.play.config.args.Config;
-import org.binave.play.config.args.Configure;
+import org.binave.play.config.args.ConfigEditor;
 import org.binave.play.config.api.ConfLoader;
 
 import java.util.*;
@@ -33,6 +34,8 @@ import java.util.concurrent.locks.StampedLock;
  *
  * reload 方法用于配置刷新
  *
+ * @see ConfPoolFactory#createSpaceConfMap()
+ *
  * @author bin jin on 2017/3/27.
  * @since 1.8
  */
@@ -45,14 +48,13 @@ class SpaceConfMapPoolImpl implements SpaceConfMap {
     private Map<String, SubEntry> subEntryMap = new HashMap<>();
 
     // 配置表缓存
-    private SortedMap<Integer, Configure> globalConfigMap = new IndexMap<>();
+    private SortedMap<Integer, ConfigEditor> globalConfigMap = new IndexMap<>();
 
     /**
      * 以区间为单位，进行版本号更新
      * 闭区间
      */
     private void updateVersion(long version) {
-
         needReadLock = true;
 
         for (SubEntry entry : subEntryMap.values()) {
@@ -63,7 +65,7 @@ class SpaceConfMapPoolImpl implements SpaceConfMap {
             long stamp = sl.writeLock();
             try {
                 // 一个区间一个区间的更新
-                for (Configure conf : globalConfigMap.subMap(entry.getHead(), entry.getTail() + 1).values()) {
+                for (ConfigEditor conf : globalConfigMap.subMap(entry.getHead(), entry.getTail() + 1).values()) {
                     // 更新旧的
                     if (conf.getVersion() != version) conf.setVersion(version);
                 }
@@ -84,7 +86,7 @@ class SpaceConfMapPoolImpl implements SpaceConfMap {
      * @param override 是否全量更新
      */
     @Override
-    public void reload(ConfLoader confLoader, long version, boolean override, String... tokens) {
+    public synchronized void reload(ConfLoader confLoader, long version, boolean override, String... tokens) {
 
         try {
             if (tokens == null || tokens.length == 0) {
@@ -105,7 +107,7 @@ class SpaceConfMapPoolImpl implements SpaceConfMap {
     private void update(ConfLoader confLoader, long version, boolean override, String... tokens) {
 
         // 新的
-        SortedMap<Integer, Configure> ConfigMap = new IndexMap<>();
+        SortedMap<Integer, ConfigEditor> ConfigMap = new IndexMap<>();
         Map<String, SubEntry> subEntryCache = new HashMap<>();
 
         // 如果不用覆盖
@@ -119,7 +121,7 @@ class SpaceConfMapPoolImpl implements SpaceConfMap {
         for (String token : tokens) {
 
             // 从其他模块逐个获得配置
-            List<? extends Configure> configList = confLoader.loadLogicConfig(token);
+            List<? extends ConfigEditor> configList = confLoader.loadLogicConfig(token);
 
             // 此处不考少数无法匹配的 token
             if (configList == null || configList.isEmpty()) continue;
@@ -129,20 +131,20 @@ class SpaceConfMapPoolImpl implements SpaceConfMap {
             int maxHead = Integer.MAX_VALUE, maxTail = 0;
 
             // 用于减少 IndexMap 增长开销，TreeMap 加入的开销可能会小一些
-            SortedMap<Integer, Configure> imgMap = new TreeMap<>();
+            SortedMap<Integer, ConfigEditor> imgMap = new TreeMap<>();
 
             // 转换 list 到 map
-            for (Configure configure : configList) {
+            for (ConfigEditor configEditor : configList) {
 
                 // 获得两端点（最大值、最小值）闭区间
-                maxHead = configure.getKey() < maxHead ? configure.getKey() : maxHead;
-                maxTail = configure.getKey() > maxTail ? configure.getKey() : maxTail;
+                maxHead = configEditor.getKey() < maxHead ? configEditor.getKey() : maxHead;
+                maxTail = configEditor.getKey() > maxTail ? configEditor.getKey() : maxTail;
 
                 // 设置新的版本号
-                configure.setVersion(version);
+                configEditor.setVersion(version);
 
                 // 放入配置镜像
-                imgMap.put(configure.getKey(), configure);
+                imgMap.put(configEditor.getKey(), configEditor);
             }
 
             // 检测是否与【其他】已经存在的配置发生交集
@@ -155,8 +157,11 @@ class SpaceConfMapPoolImpl implements SpaceConfMap {
 
                 // 测试两个范围是否存在交集
                 if (intersection(maxHead, maxTail, old.getHead(), old.getTail()))
-                    throw new RuntimeException("mixed token=" + token +
-                            ", [" + maxHead + "-" + maxTail + "], [" + old.getHead() + "-" + old.getTail() + "]"
+                    throw new RuntimeException(
+                            CharUtil.format(
+                                    "mixed token= {} , new:[{}-{}], old:[{}-{}]",
+                                    token, maxHead, maxTail, old.getHead(), old.getTail()
+                            )
                     );
             }
 
@@ -211,16 +216,21 @@ class SpaceConfMapPoolImpl implements SpaceConfMap {
     @Override
     public <Conf extends Config> Conf get(int id) {
         long stamp = sl.tryOptimisticRead();
-        Configure configure = globalConfigMap.get(id);
+        ConfigEditor configEditor = globalConfigMap.get(id);
         if (needReadLock && !sl.validate(stamp)) { // 有线程在写
             stamp = sl.readLock(); // 获得悲观读锁
             try {
-                configure = globalConfigMap.get(id);
+                configEditor = globalConfigMap.get(id);
             } finally {
                 sl.unlockRead(stamp); // 释放读锁
             }
         }
-        return (Conf) configure;
+        return (Conf) configEditor;
+    }
+
+    @Override
+    public Collection<? extends Config> values() {
+        return globalConfigMap.values();
     }
 
     /**
@@ -230,6 +240,11 @@ class SpaceConfMapPoolImpl implements SpaceConfMap {
     public Collection<? extends Config> get(String token) {
         int depth = 0; // 使用局部变量，防止并发导致过早到达极限
         return get(token, depth);
+    }
+
+    @Override
+    public int size() {
+        return globalConfigMap.size();
     }
 
 

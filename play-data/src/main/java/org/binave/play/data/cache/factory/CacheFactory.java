@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.binave.play.data.cache;
+package org.binave.play.data.cache.factory;
 
 import org.binave.play.data.api.Cache;
 import org.binave.common.serialize.Codec;
@@ -50,7 +50,7 @@ public class CacheFactory {
      * @param codec         序列化工具
      */
     public static Cache createCache(Jedis redis, FutureTime futureTime, int index, Codec codec) {
-        return new CycleImplImpl(redis, futureTime, index, codec);
+        return new CycleCacheImpl(redis, futureTime, index, codec);
     }
 
     /**
@@ -62,7 +62,7 @@ public class CacheFactory {
      * @param codec         序列化工具
      */
     public static Cache createCache(String key, Jedis redis, FutureTime futureTime, int index, Codec codec) {
-        return new CycleFieldCycleImpl(key, redis, futureTime, index, codec);
+        return new CycleFieldCacheImpl(key, redis, futureTime, index, codec);
     }
 
     /**

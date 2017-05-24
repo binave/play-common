@@ -44,7 +44,7 @@ public interface DBTransact<D> {
      */
     void rollback(long stamp);
 
-    void add(long stamp, D param) throws SQLException;
+    int add(long stamp, D... params) throws SQLException;
 
     int update(long stamp, D param) throws SQLException;
 
