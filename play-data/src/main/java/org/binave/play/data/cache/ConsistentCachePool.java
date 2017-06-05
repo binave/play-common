@@ -1,6 +1,7 @@
 package org.binave.play.data.cache;
 
 import org.binave.common.util.CharUtil;
+import org.binave.common.util.CodecUtil;
 import org.binave.common.util.DataUtil;
 import org.binave.play.data.Proxy.CacheProxy;
 import org.binave.play.data.api.Cache;
@@ -24,9 +25,9 @@ public class ConsistentCachePool {
     /**
      * hash 方式
      */
-    private CharUtil.ConsistentHash consistentHash;
+    private CodecUtil.ConsistentHash consistentHash;
 
-    public ConsistentCachePool(CharUtil.ConsistentHash consistentHash) {
+    public ConsistentCachePool(CodecUtil.ConsistentHash consistentHash) {
         this.consistentHash = consistentHash;
     }
 

@@ -6,22 +6,30 @@ package org.binave.play.data.args;
  * @author by bin jin on 2017/6/3.
  * @since 1.8
  */
-public interface TypeSql {
+public abstract class TypeSql {
 
     /**
      * 获得插入 sql
      */
-    String getInsertSql();
+    public String getInsertSql() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * 获得更新 sql
      */
-    String getUpdateSql(String whereCondition);
+    public String getUpdateSql(String whereCondition) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * 获得
      */
-    String getSelectSql(String whereCondition);
+    public String getSelectSql(String whereCondition) {
+        throw new UnsupportedOperationException();
+    }
 
-    String getCountSql(String whereCondition);
+    public String getCountSql(String whereCondition) {
+        throw new UnsupportedOperationException();
+    }
 }

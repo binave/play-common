@@ -16,7 +16,8 @@
 
 package org.binave.play.data.args;
 
-import org.binave.play.SourceBy;
+import org.binave.common.api.Mixture;
+import org.binave.common.api.SourceBy;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,36 +30,42 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class SqlFactory<D> {
 
-    private Map<Class, TypeSql> sqlCache = new ConcurrentHashMap<>();
+    private Map<Mixture<Class<? extends D>>, TypeSql> sqlCache = new ConcurrentHashMap<>();
 
     // TypeSql 源头
-    private SourceBy<TypeSql, Class<? extends D>> source;
+    private SourceBy<Class<? extends D>, TypeSql> source;
 
-    public SqlFactory(SourceBy<TypeSql, Class<? extends D>> source) {
+    public SqlFactory(SourceBy<Class<? extends D>, TypeSql> source) {
         this.source = source;
     }
 
     /**
      * 不断的生成所需的 TypeSql
      */
-    private TypeSql getSqlType(Class<? extends D> type) {
+    @SafeVarargs
+    private final TypeSql getSqlType(Class<? extends D>... types) {
+        Mixture<Class<? extends D>> mixture = new Mixture<>(types);
         // 如果没有，则建立，否则返回缓存
-        return sqlCache.computeIfAbsent(type, source::create);
+        return sqlCache.computeIfAbsent(mixture, m -> source.create(m));
     }
 
-    public String getInsertSql(Class<? extends D> type) {
-        return getSqlType(type).getInsertSql();
+    @SafeVarargs
+    public final String getInsertSql(Class<? extends D>... types) {
+        return getSqlType(types).getInsertSql();
     }
 
-    public String getUpdateSql(Class<? extends D> type, String whereCondition) {
-        return getSqlType(type).getUpdateSql(whereCondition);
+    @SafeVarargs
+    public final String getUpdateSql(String whereCondition, Class<? extends D>... types) {
+        return getSqlType(types).getUpdateSql(whereCondition);
     }
 
-    public String getSelectSql(Class<? extends D> type, String whereCondition) {
-        return getSqlType(type).getSelectSql(whereCondition);
+    @SafeVarargs
+    public final String getSelectSql(String whereCondition, Class<? extends D>... types) {
+        return getSqlType(types[0]).getSelectSql(whereCondition);
     }
 
-    public String getCountSql(Class<? extends D> type, String whereCondition) {
-        return getSqlType(type).getCountSql(whereCondition);
+    @SafeVarargs
+    public final String getCountSql(String whereCondition, Class<? extends D>... types) {
+        return getSqlType(types).getCountSql(whereCondition);
     }
 }

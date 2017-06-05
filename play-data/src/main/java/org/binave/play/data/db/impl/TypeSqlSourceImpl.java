@@ -16,11 +16,12 @@
 
 package org.binave.play.data.db.impl;
 
-import org.binave.common.util.CharUtil;
+import org.binave.common.api.Mixture;
+import org.binave.common.api.SourceBy;
 import org.binave.common.util.TypeUtil;
 import org.binave.play.data.args.Dao;
 import org.binave.play.data.args.TypeSql;
-import org.binave.play.SourceBy;
+import org.binave.play.data.db.SQLBuilder;
 
 /**
  * Sql 生成器
@@ -29,20 +30,20 @@ import org.binave.play.SourceBy;
  * @author bin jin on 2017/4/14.
  * @since 1.8
  */
-public class TypeSqlSourceImpl implements SourceBy<TypeSql, Class<? extends Dao>> {
+public class TypeSqlSourceImpl implements SourceBy<Class<? extends Dao>, TypeSql> {
 
     /**
      * 通过类型，获得相关的 sql
      */
     @Override
-    public TypeSql create(Class<? extends Dao> type) {
-        return new SimpleTypeSqlImpl(type);
+    public TypeSql create(Mixture<Class<? extends Dao>> mixture) {
+        return new SimpleTypeSqlImpl(mixture.get()[0]);
     }
 
     /**
      * 基本 sql 实现
      */
-    private class SimpleTypeSqlImpl implements TypeSql {
+    private class SimpleTypeSqlImpl extends TypeSql {
 
         private String name; // 表名
         private String[] fields; // 表全字段
@@ -58,13 +59,13 @@ public class TypeSqlSourceImpl implements SourceBy<TypeSql, Class<? extends Dao>
                     "getParams"
             ); // 获得 getParams 方法对应的变量
 
-            if (fields == null || fields.length == 0)
+            if (fields.length == 0)
                 throw new RuntimeException("can not find var: " + type.getName());
 
-            selectSql = getSelectSql(name, fields);
-            insertSql = getInsertSql(name, fields);
-            updateSql = getUpdateSql(name, fields);
-            countSql = getCountSql(name, "?");
+            selectSql = SQLBuilder.SELECT.getSql(name, fields);
+            insertSql = SQLBuilder.INSERT.getSql(name, fields);
+            updateSql = SQLBuilder.UPDATE.getSql(name, fields);
+            countSql = SQLBuilder.COUNT.getSql(name, "?");
         }
 
         @Override
@@ -92,62 +93,6 @@ public class TypeSqlSourceImpl implements SourceBy<TypeSql, Class<? extends Dao>
             } else return countSql + " WHERE " + whereCondition;
         }
 
-        /**
-         * 组装插入 SQL
-         *
-         * @param name      表名
-         * @param fields    字段名数组
-         */
-        private String getInsertSql(String name, String[] fields) {
-            return CharUtil.format(
-                    "INSERT INTO {} ({}) VALUES ({})",
-                    name,
-                    CharUtil.join(", ", null, fields, null),
-                    CharUtil.join(", ", "?", fields.length)
-            );
-        }
-
-        /**
-         * 组装更新 SQL
-         *
-         * @param name      表名
-         * @param fields    字段名数组
-         */
-        private String getUpdateSql(String name, String[] fields) {
-            return CharUtil.format(
-                    "UPDATE {} SET {} WHERE ",
-                    name,
-                    CharUtil.join(", ", null, fields, " = ?")
-            );
-        }
-
-        /**
-         * 组装查询 SQL
-         *
-         * @param name      表名
-         * @param fields    字段名数组
-         */
-        private String getSelectSql(String name, String[] fields) {
-            return CharUtil.format(
-                    "SELECT {} FROM {}",
-                    CharUtil.join(", ", null, fields, null),
-                    name
-            );
-        }
-
-        /**
-         * 组装计数器 SQL
-         *
-         * @param name      表名
-         * @param field     目标字段名称
-         */
-        private String getCountSql(String name, String field) {
-            return CharUtil.format(
-                    "SELECT count({}) FROM {}",
-                    field,
-                    name
-            );
-        }
     }
 }
 

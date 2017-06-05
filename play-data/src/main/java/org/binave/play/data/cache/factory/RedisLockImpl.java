@@ -19,7 +19,6 @@ package org.binave.play.data.cache.factory;
 import org.binave.play.data.api.Lock;
 import redis.clients.jedis.Jedis;
 
-import java.io.UnsupportedEncodingException;
 import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;

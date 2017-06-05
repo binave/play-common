@@ -16,15 +16,15 @@
 
 package org.binave.play.data.db.factory;
 
-import org.binave.play.data.api.DBTransact;
-import org.binave.play.data.args.DBConfig;
 import org.binave.play.data.api.DBConnect;
+import org.binave.play.data.api.DBTransact;
 import org.binave.play.data.args.Dao;
+import org.binave.play.data.args.DBConfig;
+import org.binave.play.data.args.SqlFactory;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.BeanHandler;
 import org.apache.commons.dbutils.handlers.BeanListHandler;
-import org.binave.play.data.args.SqlFactory;
 
 import java.security.SecureRandom;
 import java.sql.Connection;
@@ -36,6 +36,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * 数据库链接操作实现
  *
  * 使用 java 7 try (AutoCloseable) 新特性，无需写 close 方法。
+ *
+ * @see DBConnectFactory#createDBConnect(String, SqlFactory)
+ * @see DBConnectFactory#createDBConnect(DBConfig, SqlFactory)
+ * @see DBConnectFactory#createDBTransact(String, SqlFactory)
+ * @see DBConnectFactory#createDBTransact(DBConfig, SqlFactory)
  *
  * @author bin jin
  * @since 1.8
@@ -190,7 +195,7 @@ class SimpleDBConnectImpl implements DBConnect<Dao>, DBTransact<Dao> {
         try (Connection connection = getConnection()) {
             return queryRunner.update(
                     connection,
-                    sqlFactory.getUpdateSql(param.getClass(), "id = " + param.getId()),
+                    sqlFactory.getUpdateSql("id = " + param.getId(), param.getClass()),
                     param.getParams()
             );
         }
@@ -201,7 +206,7 @@ class SimpleDBConnectImpl implements DBConnect<Dao>, DBTransact<Dao> {
         if (param == null) throw new IllegalArgumentException();
         return queryRunner.update(
                 stampMap.get(stamp),
-                sqlFactory.getUpdateSql(param.getClass(), "id = " + param.getId()),
+                sqlFactory.getUpdateSql("id = " + param.getId(), param.getClass()),
                 param.getParams()
         );
     }
@@ -211,7 +216,7 @@ class SimpleDBConnectImpl implements DBConnect<Dao>, DBTransact<Dao> {
         try (Connection connection = getConnection()) {
             return queryRunner.query(
                     connection,
-                    sqlFactory.getSelectSql(clazz, whereCondition),
+                    sqlFactory.getSelectSql(whereCondition, clazz),
                     new BeanListHandler<>(clazz)
             );
         }
@@ -221,7 +226,7 @@ class SimpleDBConnectImpl implements DBConnect<Dao>, DBTransact<Dao> {
     public <T extends Dao> List<T> list(long stamp, Class<T> clazz, String whereCondition) throws SQLException {
         return queryRunner.query(
                 stampMap.get(stamp),
-                sqlFactory.getSelectSql(clazz, whereCondition) + LOCK,
+                sqlFactory.getSelectSql(whereCondition, clazz) + LOCK,
                 new BeanListHandler<>(clazz)
         );
     }
@@ -231,7 +236,7 @@ class SimpleDBConnectImpl implements DBConnect<Dao>, DBTransact<Dao> {
         try (Connection connection = getConnection()) {
             return queryRunner.query(
                     connection,
-                    sqlFactory.getSelectSql(clazz, whereCondition),
+                    sqlFactory.getSelectSql(whereCondition, clazz),
                     new BeanHandler<>(clazz)
             );
         }
@@ -241,7 +246,7 @@ class SimpleDBConnectImpl implements DBConnect<Dao>, DBTransact<Dao> {
     public <T extends Dao> T get(long stamp, Class<T> clazz, String whereCondition) throws SQLException {
         return queryRunner.query(
                 stampMap.get(stamp),
-                sqlFactory.getSelectSql(clazz, whereCondition) + LOCK,
+                sqlFactory.getSelectSql(whereCondition, clazz) + LOCK,
                 new BeanHandler<>(clazz)
         );
     }

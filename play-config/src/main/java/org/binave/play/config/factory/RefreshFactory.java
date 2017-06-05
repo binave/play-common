@@ -2,7 +2,7 @@ package org.binave.play.config.factory;
 
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Table;
-import org.binave.play.Source;
+import org.binave.common.api.Source;
 import org.binave.play.config.args.ConfigEditor;
 import org.binave.play.config.util.Refresh;
 

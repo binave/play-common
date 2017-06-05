@@ -16,9 +16,9 @@
 
 package org.binave.play.config.factory;
 
-import org.binave.common.collection.SyncProxy;
+import org.binave.common.api.Source;
+import org.binave.common.api.SyncProxy;
 import org.binave.common.collection.proxy.MultimapProxy;
-import org.binave.play.Source;
 import org.binave.play.config.util.ConfMulti;
 import org.binave.play.config.args.Config;
 import org.binave.play.config.args.ConfigEditor;

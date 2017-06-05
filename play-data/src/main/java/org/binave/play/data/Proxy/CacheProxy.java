@@ -16,7 +16,7 @@
 
 package org.binave.play.data.Proxy;
 
-import org.binave.common.collection.SyncProxy;
+import org.binave.common.api.SyncProxy;
 import org.binave.play.data.api.Cache;
 
 /**
