@@ -16,13 +16,17 @@
 
 package org.binave.play.data.db.factory;
 
+import org.binave.common.api.Source;
+import org.binave.common.api.SourceBy;
 import org.binave.common.util.CharUtil;
 import org.binave.play.data.api.DBTransact;
-import org.binave.play.data.args.DBConfig;
 import org.binave.play.data.api.DBConnect;
+import org.binave.play.data.args.DBConfig;
 import org.binave.play.data.args.Dao;
-import org.binave.play.data.args.SqlFactory;
+import org.binave.play.data.args.TypeSql;
+import org.binave.play.data.db.impl.ConnSourceImpl;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Map;
 
@@ -37,28 +41,28 @@ public class DBConnectFactory {
     /**
      * 获得基础数据库工具
      */
-    public static DBConnect<Dao> createDBConnect(DBConfig dbConfig, SqlFactory<Dao> sqlFactory) {
+    public static DBConnect<Dao> createDBConnect(Source<Connection> connSource, SourceBy<Class<? extends Dao>, TypeSql> sqlSource) {
         try {
-            return new SimpleDBConnectImpl(dbConfig, sqlFactory);
+            return new SimpleDBConnectImpl(connSource, sqlSource);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static DBConnect<Dao> createDBConnect(String jdbcUrl, SqlFactory<Dao> sqlFactory) {
-        return createDBConnect(getSimpleDataSource(jdbcUrl), sqlFactory);
+    public static DBConnect<Dao> createDBConnect(String jdbcUrl, SourceBy<Class<? extends Dao>, TypeSql> sqlSource) {
+        return createDBConnect(new ConnSourceImpl(getSimpleDataSource(jdbcUrl)), sqlSource);
     }
 
-    public static DBTransact<Dao> createDBTransact(DBConfig dbConfig, SqlFactory<Dao> sqlFactory) {
+    public static DBTransact<Dao> createDBTransact(Source<Connection> connSource, SourceBy<Class<? extends Dao>, TypeSql> sqlSource) {
         try {
-            return new SimpleDBConnectImpl(dbConfig, sqlFactory);
+            return new SimpleDBConnectImpl(connSource, sqlSource);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static DBTransact<Dao> createDBTransact(String jdbcUrl, SqlFactory<Dao> sqlFactory) {
-        return createDBTransact(getSimpleDataSource(jdbcUrl), sqlFactory);
+    public static DBTransact<Dao> createDBTransact(String jdbcUrl, SourceBy<Class<? extends Dao>, TypeSql> sqlSource) {
+        return createDBTransact(new ConnSourceImpl(getSimpleDataSource(jdbcUrl)), sqlSource);
     }
 
     /**

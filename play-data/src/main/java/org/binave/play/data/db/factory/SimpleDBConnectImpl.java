@@ -16,15 +16,15 @@
 
 package org.binave.play.data.db.factory;
 
-import org.binave.play.data.api.DBConnect;
-import org.binave.play.data.api.DBTransact;
-import org.binave.play.data.args.Dao;
-import org.binave.play.data.args.DBConfig;
-import org.binave.play.data.args.SqlFactory;
-import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.BeanHandler;
 import org.apache.commons.dbutils.handlers.BeanListHandler;
+import org.binave.common.api.Source;
+import org.binave.common.api.SourceBy;
+import org.binave.play.data.api.DBConnect;
+import org.binave.play.data.api.DBTransact;
+import org.binave.play.data.args.Dao;
+import org.binave.play.data.args.TypeSql;
 
 import java.security.SecureRandom;
 import java.sql.Connection;
@@ -37,24 +37,20 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * 使用 java 7 try (AutoCloseable) 新特性，无需写 close 方法。
  *
- * @see DBConnectFactory#createDBConnect(String, SqlFactory)
- * @see DBConnectFactory#createDBConnect(DBConfig, SqlFactory)
- * @see DBConnectFactory#createDBTransact(String, SqlFactory)
- * @see DBConnectFactory#createDBTransact(DBConfig, SqlFactory)
+ * @see DBConnectFactory#createDBConnect(String, SourceBy)
+ * @see DBConnectFactory#createDBConnect(Source, SourceBy)
+ * @see DBConnectFactory#createDBTransact(String, SourceBy)
+ * @see DBConnectFactory#createDBTransact(Source, SourceBy)
  *
  * @author bin jin
  * @since 1.8
  */
 class SimpleDBConnectImpl implements DBConnect<Dao>, DBTransact<Dao> {
 
-    private SqlFactory<Dao> sqlFactory;
+    private Source<Connection> connSource;
+    private SourceBy<Class<? extends Dao>, TypeSql> sqlSource;
 
     private final static String LOCK = " FOR UPDATE";
-
-    /**
-     * 数据库启动配置
-     */
-    private DBConfig dbConfig;
 
     private long version;
 
@@ -64,9 +60,9 @@ class SimpleDBConnectImpl implements DBConnect<Dao>, DBTransact<Dao> {
 
     private QueryRunner queryRunner = new QueryRunner(); // jdbc
 
-    SimpleDBConnectImpl(DBConfig dbConfig, SqlFactory<Dao> sqlFactory) throws SQLException {
-        this.dbConfig = dbConfig;
-        this.sqlFactory = sqlFactory;
+    SimpleDBConnectImpl(Source<Connection> connSource, SourceBy<Class<? extends Dao>, TypeSql> sqlSource) throws SQLException {
+        this.connSource = connSource;
+        this.sqlSource = sqlSource;
     }
 
     @Override
@@ -78,7 +74,7 @@ class SimpleDBConnectImpl implements DBConnect<Dao>, DBTransact<Dao> {
 
         Connection connection = null;
         try {
-            connection = getConnection();
+            connection = connSource.create();
             connection.setAutoCommit(false);
             stampMap.put(stamp, connection);
         } catch (SQLException e) {
@@ -133,9 +129,9 @@ class SimpleDBConnectImpl implements DBConnect<Dao>, DBTransact<Dao> {
         if (params == null || params.length == 0)
             throw new IllegalArgumentException("args is error");
 
-        String sql = sqlFactory.getInsertSql(params[0].getClass());
+        String sql = sqlSource.create(params[0].getClass()).getInsertSql();
 
-        try (Connection connection = getConnection()) {
+        try (Connection connection = connSource.create()) {
             if (params.length == 1) {
                 return queryRunner.update(
                         connection,
@@ -165,7 +161,7 @@ class SimpleDBConnectImpl implements DBConnect<Dao>, DBTransact<Dao> {
         if (params == null || params.length == 0)
             throw new IllegalArgumentException("args is error");
 
-        String sql = sqlFactory.getInsertSql(params[0].getClass());
+        String sql = sqlSource.create(params[0].getClass()).getInsertSql();
         if (params.length == 1) {
             return queryRunner.update(
                     stampMap.get(stamp),
@@ -192,10 +188,10 @@ class SimpleDBConnectImpl implements DBConnect<Dao>, DBTransact<Dao> {
     @Override
     public int update(Dao param) throws SQLException {
         if (param == null) throw new IllegalArgumentException();
-        try (Connection connection = getConnection()) {
+        try (Connection connection = connSource.create()) {
             return queryRunner.update(
                     connection,
-                    sqlFactory.getUpdateSql("id = " + param.getId(), param.getClass()),
+                    sqlSource.create(param.getClass()).getUpdateSql("id = " + param.getId()),
                     param.getParams()
             );
         }
@@ -206,17 +202,17 @@ class SimpleDBConnectImpl implements DBConnect<Dao>, DBTransact<Dao> {
         if (param == null) throw new IllegalArgumentException();
         return queryRunner.update(
                 stampMap.get(stamp),
-                sqlFactory.getUpdateSql("id = " + param.getId(), param.getClass()),
+                sqlSource.create(param.getClass()).getUpdateSql("id = " + param.getId()),
                 param.getParams()
         );
     }
 
     @Override
     public <T extends Dao> List<T> list(Class<T> clazz, String whereCondition) throws SQLException {
-        try (Connection connection = getConnection()) {
+        try (Connection connection = connSource.create()) {
             return queryRunner.query(
                     connection,
-                    sqlFactory.getSelectSql(whereCondition, clazz),
+                    sqlSource.create(clazz).getSelectSql(whereCondition),
                     new BeanListHandler<>(clazz)
             );
         }
@@ -226,17 +222,17 @@ class SimpleDBConnectImpl implements DBConnect<Dao>, DBTransact<Dao> {
     public <T extends Dao> List<T> list(long stamp, Class<T> clazz, String whereCondition) throws SQLException {
         return queryRunner.query(
                 stampMap.get(stamp),
-                sqlFactory.getSelectSql(whereCondition, clazz) + LOCK,
+                sqlSource.create(clazz).getSelectSql(whereCondition) + LOCK,
                 new BeanListHandler<>(clazz)
         );
     }
 
     @Override
     public <T extends Dao> T get(Class<T> clazz, String whereCondition) throws SQLException {
-        try (Connection connection = getConnection()) {
+        try (Connection connection = connSource.create()) {
             return queryRunner.query(
                     connection,
-                    sqlFactory.getSelectSql(whereCondition, clazz),
+                    sqlSource.create(clazz).getSelectSql(whereCondition),
                     new BeanHandler<>(clazz)
             );
         }
@@ -246,7 +242,7 @@ class SimpleDBConnectImpl implements DBConnect<Dao>, DBTransact<Dao> {
     public <T extends Dao> T get(long stamp, Class<T> clazz, String whereCondition) throws SQLException {
         return queryRunner.query(
                 stampMap.get(stamp),
-                sqlFactory.getSelectSql(whereCondition, clazz) + LOCK,
+                sqlSource.create(clazz).getSelectSql(whereCondition) + LOCK,
                 new BeanHandler<>(clazz)
         );
     }
@@ -261,34 +257,6 @@ class SimpleDBConnectImpl implements DBConnect<Dao>, DBTransact<Dao> {
             parameters[i++] = param.getParams();
         }
         return parameters;
-    }
-
-    private BasicDataSource basicDataSource; // 连接池
-
-    /**
-     * 在使用时加载，提前加载会因为环境变量延迟加载而报错
-     * @return 数据库链接
-     */
-    private Connection getConnection() throws SQLException {
-        if (basicDataSource == null) basicDataSource = getBasicDataSource();
-        Connection connection = basicDataSource.getConnection();
-        connection.setAutoCommit(true); // 自动提交，有实物时，则不进行自动提交
-        return connection;
-    }
-
-    /**
-     * 从环境变量中获得数据库链接信息，创建连接池
-     */
-    private BasicDataSource getBasicDataSource() throws SQLException {
-        BasicDataSource dataSource = new BasicDataSource();
-        // todo 在框架中，需要赋予相应的 classloader，此处暂不做修改
-//         dataSource.setDriverClassLoader();
-        dataSource.setDriverClassName(dbConfig.getDriverClassName());
-        dataSource.setUrl(dbConfig.getUrl());
-        dataSource.setUsername(dbConfig.getUsername());
-        dataSource.setPassword(dbConfig.getPassword());
-        dataSource.setMaxConnLifetimeMillis(dbConfig.getMaxConnLifetimeMillis());
-        return dataSource;
     }
 
 }

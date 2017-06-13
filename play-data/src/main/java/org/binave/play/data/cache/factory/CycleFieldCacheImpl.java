@@ -25,8 +25,8 @@ class CycleFieldCacheImpl extends RedisLockImpl implements Cache, Adder {
     private String key;
     private byte[] keyBytes;
 
-    CycleFieldCacheImpl(String key, Jedis redis, FutureTime futureTime, int index, Codec codec) {
-        super(redis);
+    CycleFieldCacheImpl(String key, Jedis redis, String tag, FutureTime futureTime, int index, Codec codec) {
+        super(redis, tag);
         this.key = key;
         this.url = redis.getClient().getHost() + redis.getDB();
         this.redis = redis;
@@ -73,9 +73,9 @@ class CycleFieldCacheImpl extends RedisLockImpl implements Cache, Adder {
     @Override
     public <T> T get(Object field, Class<T> type) {
         if (String.class.equals(type)) {
-            return (T) redis.hget(this.key,Objects.toString(field));
+            return (T) redis.hget(this.key, Objects.toString(field));
         } else if (Number.class.isAssignableFrom(type)) {
-            String value = redis.hget(this.key,Objects.toString(field));
+            String value = redis.hget(this.key, Objects.toString(field));
             return (T) Integer.valueOf(value.replaceAll("\\..*", ""));
         } else {
             byte[] fieldBytes = CharUtil.toBytes(field);

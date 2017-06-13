@@ -16,28 +16,34 @@
 
 package org.binave.play.data.db.impl;
 
-import org.binave.common.api.Mixture;
 import org.binave.common.api.SourceBy;
 import org.binave.common.util.TypeUtil;
 import org.binave.play.data.args.Dao;
 import org.binave.play.data.args.TypeSql;
 import org.binave.play.data.db.SQLBuilder;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * Sql 生成器
  * 利用类的 {@link Dao#getParams()} 方法，生成对应 sql
+ *
+ * 用 类 生成 sql
  *
  * @author bin jin on 2017/4/14.
  * @since 1.8
  */
 public class TypeSqlSourceImpl implements SourceBy<Class<? extends Dao>, TypeSql> {
 
+    private Map<Class<? extends Dao>, TypeSql> sqlCache = new ConcurrentHashMap<>();
+
     /**
      * 通过类型，获得相关的 sql
      */
     @Override
-    public TypeSql create(Mixture<Class<? extends Dao>> mixture) {
-        return new SimpleTypeSqlImpl(mixture.get()[0]);
+    public TypeSql create(Class<? extends Dao> type) {
+        return sqlCache.computeIfAbsent(type, k -> new SimpleTypeSqlImpl(type));
     }
 
     /**

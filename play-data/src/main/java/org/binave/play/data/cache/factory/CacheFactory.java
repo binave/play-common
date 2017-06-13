@@ -39,7 +39,7 @@ public class CacheFactory {
      * @param codec         序列化工具
      */
     public static Cache createBoundedCache(String key, Jedis redis, FutureTime futureTime, int index, Codec codec) {
-        return new SortedCacheImpl(key,  redis, futureTime, index, codec);
+        return new SortedCacheImpl(key, redis, futureTime, index, codec);
     }
 
     /**
@@ -49,8 +49,8 @@ public class CacheFactory {
      * @param index         过期时刻
      * @param codec         序列化工具
      */
-    public static Cache createCache(Jedis redis, FutureTime futureTime, int index, Codec codec) {
-        return new CycleCacheImpl(redis, futureTime, index, codec);
+    public static Cache createCache(Jedis redis, String tag, FutureTime futureTime, int index, Codec codec) {
+        return new CycleCacheImpl(redis, tag, futureTime, index, codec);
     }
 
     /**
@@ -61,8 +61,8 @@ public class CacheFactory {
      * @param index         过期时刻
      * @param codec         序列化工具
      */
-    public static Cache createCache(String key, Jedis redis, FutureTime futureTime, int index, Codec codec) {
-        return new CycleFieldCacheImpl(key, redis, futureTime, index, codec);
+    public static Cache createCache(String key, Jedis redis, String tag, FutureTime futureTime, int index, Codec codec) {
+        return new CycleFieldCacheImpl(key, redis, tag, futureTime, index, codec);
     }
 
     /**

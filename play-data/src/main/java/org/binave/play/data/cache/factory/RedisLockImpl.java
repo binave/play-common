@@ -38,13 +38,15 @@ public class RedisLockImpl implements Lock {
     private final static int MAX_SLEEP_MS = 100; // milliseconds
     private final static int MIN_SLEEP_MS = 5;
     private final static String PREFIX = "#LOCK_";
+    private String tag; // 用于分类
 
     private Jedis redis;
     private Random random = new SecureRandom();
     private Map<Long, String> stampMap = new HashMap<>(); // 无需线程安全，获得好的性能
 
-    RedisLockImpl(Jedis redis) {
+    RedisLockImpl(Jedis redis, String tag) {
         this.redis = redis;
+        this.tag = tag;
     }
 
     Jedis getJedis() {
@@ -74,7 +76,7 @@ public class RedisLockImpl implements Lock {
 
         String status = redis.set(
                 PREFIX + key,
-                String.valueOf(stamp),
+                tag + stamp,
                 "NX", // Only set the key if it does not already exist
                 "PX", // milliseconds
                 LOCK_MS
@@ -131,7 +133,7 @@ public class RedisLockImpl implements Lock {
                         EXPIRE_IF_EXIST_VALUE,
                         1,
                         PREFIX + key,
-                        String.valueOf(stamp),
+                        tag + stamp,
                         String.valueOf(LOCK_MS / 1000) // seconds
                 );
         return 1L == (Long) status;
@@ -155,7 +157,7 @@ public class RedisLockImpl implements Lock {
                     DEL_IF_EXIST_VALUE,
                     1,
                     PREFIX + key,
-                    String.valueOf(stamp)
+                    tag + stamp
             );
             stampMap.remove(stamp);
         }

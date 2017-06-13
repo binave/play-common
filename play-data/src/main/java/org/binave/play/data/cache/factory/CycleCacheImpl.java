@@ -40,8 +40,8 @@ class CycleCacheImpl extends RedisLockImpl implements Cache, Adder {
     private int index;
     private Codec codec;
 
-    CycleCacheImpl(Jedis redis, FutureTime futureTime, int index, Codec codec) {
-        super(redis);
+    CycleCacheImpl(Jedis redis, String tag, FutureTime futureTime, int index, Codec codec) {
+        super(redis, tag);
 
         this.redis = redis;
         this.url = redis.getClient().getHost() + redis.getDB();
