@@ -56,6 +56,7 @@ class SimpleDBConnectImpl implements DBConnect<Dao>, DBTransact<Dao> {
 
     private Random random = new SecureRandom();
 
+    // todo 每个 key 在 map 中存留的时间需要限制
     private Map<Long, Connection> stampMap = new ConcurrentHashMap<>();
 
     private QueryRunner queryRunner = new QueryRunner(); // jdbc
@@ -72,19 +73,10 @@ class SimpleDBConnectImpl implements DBConnect<Dao>, DBTransact<Dao> {
             stamp = random.nextLong();
         } while (stampMap.containsKey(stamp));
 
-        Connection connection = null;
-        try {
-            connection = connSource.create();
+        try (Connection connection = connSource.create()){
             connection.setAutoCommit(false);
             stampMap.put(stamp, connection);
         } catch (SQLException e) {
-            if (connection != null) {
-                try {
-                    connection.close();
-                } catch (SQLException se) {
-                    throw new RuntimeException(se);
-                }
-            }
             throw new RuntimeException(e);
         }
         return stamp;

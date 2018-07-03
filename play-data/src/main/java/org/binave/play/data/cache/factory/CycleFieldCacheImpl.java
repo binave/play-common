@@ -15,7 +15,7 @@ import java.util.Objects;
  * @author by bin jin on 2017/5/12.
  * @since 1.8
  */
-class CycleFieldCacheImpl extends RedisLockImpl implements Cache, Adder {
+class CycleFieldCacheImpl extends RedisLockByImpl implements Cache, Adder {
 
     private String url;
     private Jedis redis;

@@ -32,7 +32,7 @@ import java.util.Objects;
  * @author bin jin on 2017/4/20.
  * @since 1.8
  */
-class CycleCacheImpl extends RedisLockImpl implements Cache, Adder {
+class CycleCacheImpl extends RedisLockByImpl implements Cache, Adder {
 
     private String url;
     private Jedis redis;

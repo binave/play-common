@@ -19,16 +19,18 @@ package org.binave.play.data.api;
 /**
  * 排他锁、重锁、悲观锁
  *
+ * @see java.util.concurrent.locks.Lock
+ *
  * @author bin jin on 2017/4/21.
  * @since 1.8
  */
-public interface Lock {
+public interface LockBy {
 
     /**
      * 锁
      *
      * @param key       锁 key
-     * @return          用于解锁的数值
+     * @return 用于解锁的数值
      */
     long lock(String key);
 

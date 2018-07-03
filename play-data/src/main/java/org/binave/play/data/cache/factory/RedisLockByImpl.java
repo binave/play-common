@@ -16,7 +16,7 @@
 
 package org.binave.play.data.cache.factory;
 
-import org.binave.play.data.api.Lock;
+import org.binave.play.data.api.LockBy;
 import redis.clients.jedis.Jedis;
 
 import java.security.SecureRandom;
@@ -31,7 +31,7 @@ import java.util.Random;
  * @author bin jin on 2017/4/21.
  * @since 1.8
  */
-public class RedisLockImpl implements Lock {
+public class RedisLockByImpl implements LockBy {
 
     private final static long LOCK_MS = 30000; // milliseconds
     private final static int RECURSION_DEPTH_LIMIT = 30; // 递归深度限制
@@ -44,7 +44,7 @@ public class RedisLockImpl implements Lock {
     private Random random = new SecureRandom();
     private Map<Long, String> stampMap = new HashMap<>(); // 无需线程安全，获得好的性能
 
-    RedisLockImpl(Jedis redis, String tag) {
+    RedisLockByImpl(Jedis redis, String tag) {
         this.redis = redis;
         this.tag = tag;
     }
@@ -72,6 +72,7 @@ public class RedisLockImpl implements Lock {
         long stamp;
         do {
             stamp = random.nextLong();
+            // todo 此处可能会导致死锁或者重复 key
         } while (stampMap.containsKey(stamp));
 
         String status = redis.set(
