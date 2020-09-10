@@ -2,12 +2,15 @@
 
 游戏服务端基础组件
 
+Licensing
+=========
+play-common is licensed under the Apache License, Version 2.0. See
+[LICENSE](https://github.com/binave/play-common/blob/master/LICENSE) for the full
+license text.
+
 * play-api      基础组件共享接口
-
 * play-config   游戏配置相关
-
 * play-data     数据库、缓存相关
-
 * play-route    请求路由相关
 
 注意：
