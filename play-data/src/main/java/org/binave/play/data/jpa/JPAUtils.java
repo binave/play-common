@@ -1,5 +1,6 @@
 package org.binave.play.data.jpa;
 
+import org.binave.common.util.TypeUtil;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.support.JpaRepositoryFactory;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -18,8 +19,6 @@ import javax.persistence.Persistence;
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.Map;
 
 /**
@@ -106,13 +105,13 @@ public class JPAUtils {
             // 属性是否是静态的，且是 JpaEntityManager 类型或子类
             if (Modifier.isStatic(field.getModifiers()) && JpaEntityManager.class.isAssignableFrom(field.getType())) {
                 // 获得属性的第一个泛型类型
-                Class<?> genericType = (Class<?>) getGenericTypes(field.getGenericType())[0];
+                Class<?> genericType = (Class<?>) TypeUtil.getGenericTypes(field.getGenericType())[0];
                 // 如果泛型是接口，并且是 JpaRepository 的子类
                 if (genericType.isInterface() && JpaRepository.class.isAssignableFrom(genericType)) {
                     // 转换成子类形式
                     Class<? extends JpaRepository> jpaGenericType = (Class<? extends JpaRepository>) genericType;
                     // 获得这个接口类的第一个泛型，用来扫描包路径
-                    Class<?> genericTypeGenericType = ((Class<?>) getGenericTypes(
+                    Class<?> genericTypeGenericType = ((Class<?>) TypeUtil.getGenericTypes(
                             (jpaGenericType).getGenericInterfaces()[0]
                     )[0]);
                     if (packagePath == null) {
@@ -138,10 +137,5 @@ public class JPAUtils {
             }
         }
     }
-
-    private static Type[] getGenericTypes(Type type) {
-        return ((ParameterizedType) type).getActualTypeArguments();
-    }
-
 
 }
