@@ -94,9 +94,10 @@ public class JPAUtils {
     }
 
     /**
-     * 初始化静态 jpa 操作类
+     * 延迟初始化静态 jpa 操作类。使用返回对象的
+     * @see Conf#init() 方法，进行配置更新。
      */
-    public static synchronized void initJpaEntity(DBConf dbConf, Class<?> daoClass) {
+    public static Conf initJpaEntity(DBConf dbConf, Class<?> daoClass) {
         EntityManagerFactory factory = null;
         EntityManager manager = null;
         String packagePath = null;
@@ -132,14 +133,20 @@ public class JPAUtils {
                 }
             }
         }
-
-        for (Entry<Field, JpaEntityManager> entry : entryList) {
-            try {
-                entry.k.set(null, entry.v); // 给静态属性赋值。
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
+        return () -> {
+            for (Entry<Field, JpaEntityManager> entry : entryList) {
+                try {
+                    entry.k.set(null, entry.v); // 给静态属性赋值。
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
             }
-        }
+        };
+
+    }
+
+    public interface Conf {
+        void init();
     }
 
     private static class Entry<K, V> {
