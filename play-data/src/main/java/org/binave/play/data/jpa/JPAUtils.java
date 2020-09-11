@@ -19,6 +19,8 @@ import javax.persistence.Persistence;
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -93,14 +95,13 @@ public class JPAUtils {
 
     /**
      * 初始化静态 jpa 操作类
-     *
-     * 未采用写时复制
      */
     public static synchronized void initJpaEntity(DBConf dbConf, Class<?> daoClass) {
         EntityManagerFactory factory = null;
         EntityManager manager = null;
         String packagePath = null;
 
+        List<Entry<Field, JpaEntityManager>> entryList = new LinkedList<>();
         for (Field field : daoClass.getDeclaredFields()) {
             // 属性是否是静态的，且是 JpaEntityManager 类型或子类
             if (Modifier.isStatic(field.getModifiers()) && JpaEntityManager.class.isAssignableFrom(field.getType())) {
@@ -121,20 +122,33 @@ public class JPAUtils {
                     }
 
                     field.setAccessible(true);
-                    try {
-                        // 给静态属性赋值。
-                        field.set(null, new JpaEntityManager<>(
-                                genericTypeGenericType.getSimpleName(),
-                                dbConf.getVersion(),
-                                dbConf.getJdbcUrl(),
-                                getPlatformTransactionManager(factory),
-                                getJpaRepository(manager, jpaGenericType)
-                        ));
-                    } catch (IllegalAccessException e) {
-                        throw new RuntimeException(e);
-                    }
+                    entryList.add(new Entry<>(field, new JpaEntityManager<>(
+                            genericTypeGenericType.getSimpleName(),
+                            dbConf.getVersion(),
+                            dbConf.getJdbcUrl(),
+                            getPlatformTransactionManager(factory),
+                            getJpaRepository(manager, jpaGenericType)
+                    )));
                 }
             }
+        }
+
+        for (Entry<Field, JpaEntityManager> entry : entryList) {
+            try {
+                entry.k.set(null, entry.v); // 给静态属性赋值。
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private static class Entry<K, V> {
+        private K k;
+        private V v;
+
+        Entry(K k, V v) {
+            this.k = k;
+            this.v = v;
         }
     }
 
