@@ -16,11 +16,18 @@
 
 package org.binave.play.config;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.*;
 import org.binave.common.util.CharUtil;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.StringReader;
+import java.text.SimpleDateFormat;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -72,6 +79,58 @@ public class JsonUtil {
      */
     public static <E> List<E> getCaseInsensitive(Class<E> type, File file, String label) {
         return getCaseInsensitive(type, CharUtil.readText(file), label);
+    }
+
+    /**
+     * 反序列化
+     */
+    public static <T> T toObject(String json, Class<?>... classes) {
+        if (classes == null || classes.length == 0) {
+            throw new IllegalArgumentException("no class");
+        }
+
+        if (classes.length > 1) {
+            Class<?> parametrized = classes[0];
+            Class<?>[] copy = new Class[classes.length - 1];
+            System.arraycopy(classes, 1, copy, 0, copy.length);
+            JavaType type = getObjectMapper().
+                    getTypeFactory().
+                    constructParametricType(parametrized, copy);
+            try {
+                return getObjectMapper().readValue(json, type);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            try {
+                return (T) getObjectMapper().readValue(json, classes[0]);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    /**
+     * 序列化
+     */
+    public static String toString(Object obj) {
+        try {
+            return getObjectMapper().
+                    writerWithDefaultPrettyPrinter(). // 格式化
+                    writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static ObjectMapper getObjectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"));
+//        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true); // 忽略大小写
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL); // 忽略 null
+//        mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY); // 忽略空字符
+        return mapper;
     }
 
 }
