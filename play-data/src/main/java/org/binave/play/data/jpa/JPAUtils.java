@@ -1,6 +1,7 @@
 package org.binave.play.data.jpa;
 
 import org.binave.common.util.TypeUtil;
+import org.binave.play.data.api.DataConf;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.support.JpaRepositoryFactory;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -32,11 +33,12 @@ public class JPAUtils {
      * 使用默认的 META-INF/persistence.xml，其中不要使用 name="save"。
      * 可以通过 {@link LocalContainerEntityManagerFactoryBean#setPersistenceXmlLocation(String)} 进行路径设置
      */
-    public static EntityManagerFactory createEntityManagerFactory(Map<String, ?> jpaProperties, String... packagesToScan) {
+    public static EntityManagerFactory createEntityManagerFactory(DataConf dataConf, String... packagesToScan) {
         LocalContainerEntityManagerFactoryBean factoryBean = new LocalContainerEntityManagerFactoryBean();
         factoryBean.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
         factoryBean.setPackagesToScan(packagesToScan); // 设置扫描 Entity 的包路径
-        factoryBean.setJpaPropertyMap(jpaProperties); // 设置如： "hibernate.hbm2ddl.auto", "update"
+        factoryBean.setDataSource(dataConf.convertToDataSource()); // 设置数据源
+        factoryBean.setJpaPropertyMap(dataConf.getProperties()); // 设置如： "hibernate.hbm2ddl.auto", "update"
         factoryBean.afterPropertiesSet(); // 生成 EntityManagerFactory 必要的步骤
         return factoryBean.getNativeEntityManagerFactory();
     }
@@ -97,7 +99,7 @@ public class JPAUtils {
      * 延迟初始化静态 jpa 操作类。使用返回对象的
      * @see Conf#init() 方法，进行配置更新。
      */
-    public static Conf initJpaEntity(DBConf dbConf, Class<?> daoClass) {
+    public static Conf initJpaEntity(DataConf dataConf, Class<?> daoClass) {
         EntityManagerFactory factory = null;
         EntityManager manager = null;
         String packagePath = null;
@@ -118,15 +120,15 @@ public class JPAUtils {
                     )[0]);
                     if (packagePath == null) {
                         packagePath = genericTypeGenericType.getPackage().getName(); // 扫描的包名
-                        factory = createEntityManagerFactory(dbConf.convertJPAProperties(), packagePath);
+                        factory = createEntityManagerFactory(dataConf, packagePath);
                         manager = getEntityManager(factory);
                     }
 
                     field.setAccessible(true);
                     entryList.add(new Entry<>(field, new JpaEntityManager<>(
                             genericTypeGenericType.getSimpleName(),
-                            dbConf.getVersion(),
-                            dbConf.getJdbcUrl(),
+                            dataConf.getVersion(),
+                            dataConf.getJdbcUrl(),
                             getPlatformTransactionManager(factory),
                             getJpaRepository(manager, jpaGenericType)
                     )));

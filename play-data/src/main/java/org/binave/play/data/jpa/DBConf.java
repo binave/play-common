@@ -3,7 +3,7 @@ package org.binave.play.data.jpa;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import org.binave.common.api.Version;
+import org.binave.play.data.api.DataConf;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import javax.sql.DataSource;
@@ -18,39 +18,41 @@ import java.util.Map;
 @Getter
 @Setter
 @ToString
-public class DBConf implements Version {
+public class DBConf implements DataConf {
 
     private String name;                    // 并非数据库用户名
     private String jdbcUrl;
     private String username;
     private String password;
     private String driverClassName;
-    private String dialect;                 // JPA 参数
     private boolean write;
     private String description;
     private int fetchSize;
     private double version;
     private Map<String, String> sqlDict;    // sql
     private Map<String, String> properties;
-    private String[] packages;              // JPA 扫描包名
+
+    public Map<String, String> getProperties() {
+        Map<String, String> setting = new HashMap<>();
+        setting.put("hibernate.hbm2ddl.auto", "update");
+        setting.put("hibernate.show_sql", "false");
+//        setting.put("hibernate.dialect", "org.binave.play.data.jpa.SaveDialect");
+        if (properties != null) {
+            setting.putAll(this.properties);
+        }
+        this.properties = setting;
+        return this.properties;
+    }
 
     public DataSource convertToDataSource() {
+//        HikariDataSource ds = new HikariDataSource();
+//        ds.setJdbcUrl(this.getJdbcUrl());
+//        ds.setUsername(this.getUsername());
+//        ds.setPassword(this.getPassword());
+//        ds.setDriverClassName(this.getDriverClassName());
         throw new NotImplementedException();
     }
 
-    public Map<String, ?> convertJPAProperties() {
-        Map<String, String> conf = new HashMap<>();
-        conf.put("javax.persistence.jdbc.driver", this.getDriverClassName());
-        conf.put("javax.persistence.jdbc.url", this.getJdbcUrl());
-        conf.put("javax.persistence.jdbc.user", this.getUsername());
-        conf.put("javax.persistence.jdbc.password", this.getPassword());
-        conf.put("hibernate.dialect", this.getDialect());
-        conf.put("hibernate.hbm2ddl.auto", "update");
-        if (this.getProperties() != null) {
-            conf.putAll(this.getProperties());
-        }
-        return conf;
-    }
 
 
 }
