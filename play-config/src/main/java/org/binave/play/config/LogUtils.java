@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 /**
- * @author by binjinj on 2020/9/4 20:51.
+ * @author by bin jin on 2020/9/4 20:51.
  */
 public class LogUtils {
 

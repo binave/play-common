@@ -2,6 +2,7 @@ package org.binave.play.async.route;
 
 import co.paralleluniverse.fibers.Suspendable;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.sync.SyncVerticle;
 import io.vertx.ext.web.RoutingContext;
@@ -15,7 +16,7 @@ import java.net.HttpURLConnection;
 /**
  *
  *
- * @author by binjinj on 2020/9/9 22:12.
+ * @author by bin jin on 2020/9/9 22:12.
  */
 @Slf4j
 abstract public class JsonDataVerticle<Pojo> extends SyncVerticle {
@@ -47,10 +48,20 @@ abstract public class JsonDataVerticle<Pojo> extends SyncVerticle {
             HttpServerRequest request = ctx.request();
             SocketAddress address = request.remoteAddress();
             log.error("'{}:{}' -> '{}{}'", address.host(), address.port(), request.host(), request.uri());
-            ctx.response().
-                    putHeader("content-type", "text/plain").
-                    setStatusCode(HttpURLConnection.HTTP_OK).
-                    end("bad request");
+            HttpServerResponse response = ctx.response().putHeader("content-type", "text/plain");
+            String msg = e.getMessage();
+            Throwable t = e;
+            while (t.getCause() != null) t = t.getCause();
+            t.printStackTrace();
+            if (t instanceof IllegalArgumentException) {
+                response.
+                        setStatusCode(HttpURLConnection.HTTP_BAD_REQUEST).
+                        end(msg);
+            } else {
+                response.
+                        setStatusCode(HttpURLConnection.HTTP_INTERNAL_ERROR).
+                        end(msg);
+            }
             return;
         }
 
