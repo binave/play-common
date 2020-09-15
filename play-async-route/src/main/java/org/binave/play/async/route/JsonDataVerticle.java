@@ -23,10 +23,17 @@ abstract public class JsonDataVerticle<Pojo> extends SyncVerticle {
     private Class<?> type;
 
     protected JsonDataVerticle() {
-        Type[] types = TypeUtil.getGenericTypes(this.getClass().getGenericSuperclass());
+        Class<?> subClass = this.getClass();
+        while (subClass.getSuperclass() != JsonDataVerticle.class) {
+            subClass = subClass.getSuperclass();
+            if (subClass == null || subClass == Class.class) {
+                throw new RuntimeException("class type error.");
+            }
+        }
+        Type[] types = TypeUtil.getGenericTypes(subClass.getGenericSuperclass());
         if (types == null || types.length == 0)
             throw new RuntimeException(
-                    "not found generic class: " + this.getClass().getName()
+                    String.format("not found generic class: %s", subClass.getName())
             );
         this.type = (Class<?>) types[0];
     }
