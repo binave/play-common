@@ -53,6 +53,18 @@ public class DBConf implements DataConf {
         throw new NotImplementedException();
     }
 
-
-
+    @Override
+    public void check() throws RuntimeException {
+        if (jdbcUrl == null || jdbcUrl.length() < 5 ||
+                username == null || password == null ||
+                driverClassName == null) {
+            throw new IllegalArgumentException(String.format("%s is empty",
+                    jdbcUrl == null || jdbcUrl.length() < 5 ? "url" : (
+                            username == null ? "username" : (
+                                    password == null ? "password" : "driverClassName"
+                            )
+                    )
+            ));
+        }
+    }
 }
