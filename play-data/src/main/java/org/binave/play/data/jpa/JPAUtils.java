@@ -33,12 +33,12 @@ public class JPAUtils {
      * 使用默认的 META-INF/persistence.xml，其中不要使用 name="save"。
      * 可以通过 {@link LocalContainerEntityManagerFactoryBean#setPersistenceXmlLocation(String)} 进行路径设置
      */
-    public static EntityManagerFactory createEntityManagerFactory(DataConf dataConf, String... packagesToScan) {
+    public static EntityManagerFactory createEntityManagerFactory(DataSource dataSource, Map<String, ?> jpaProperties, String... packagesToScan) {
         LocalContainerEntityManagerFactoryBean factoryBean = new LocalContainerEntityManagerFactoryBean();
         factoryBean.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
         factoryBean.setPackagesToScan(packagesToScan); // 设置扫描 Entity 的包路径
-        factoryBean.setDataSource(dataConf.convertToDataSource()); // 设置数据源
-        factoryBean.setJpaPropertyMap(dataConf.getProperties()); // 设置如： "hibernate.hbm2ddl.auto", "update"
+        factoryBean.setDataSource(dataSource); // 设置数据源
+        factoryBean.setJpaPropertyMap(jpaProperties); // 设置如： "hibernate.hbm2ddl.auto", "update"
         factoryBean.afterPropertiesSet(); // 生成 EntityManagerFactory 必要的步骤
         return factoryBean.getNativeEntityManagerFactory();
     }
@@ -120,7 +120,7 @@ public class JPAUtils {
                     )[0]);
                     if (packagePath == null) {
                         packagePath = genericTypeGenericType.getPackage().getName(); // 扫描的包名
-                        factory = createEntityManagerFactory(dataConf, packagePath);
+                        factory = createEntityManagerFactory(dataConf.convertToDataSource(), dataConf.getProperties(), packagePath);
                         manager = getEntityManager(factory);
                     }
 

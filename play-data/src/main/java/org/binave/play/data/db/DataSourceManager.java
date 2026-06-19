@@ -22,4 +22,10 @@ public class DataSourceManager implements Version {
     private int fetchSize;
     private boolean write;
 
+    @Override
+    public void check() {
+        if (url == null) {
+            throw new IllegalArgumentException("url is empty");
+        }
+    }
 }

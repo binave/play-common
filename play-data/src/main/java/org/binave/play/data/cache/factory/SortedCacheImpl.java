@@ -24,6 +24,9 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.Response;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -62,7 +65,15 @@ class SortedCacheImpl implements Cache {
         if (key == null || key.isEmpty() || jedis == null || codec == null)
             throw new IllegalArgumentException();
 
-        this.url = jedis.getClient().getHost() + jedis.getDB();
+        try {
+            // redis.getClient().getHost(): change api
+            Method declaredMethodNameGetHostAndPort = redis.clients.jedis.Connection.class.
+                    getDeclaredMethod("getHostAndPort");
+            declaredMethodNameGetHostAndPort.setAccessible(true);
+            this.url = (String) declaredMethodNameGetHostAndPort.invoke(jedis.getClient()) + jedis.getDB();
+        } catch (IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
         this.futureTime = futureTime;
         this.redis = jedis.pipelined();
         SortedMainKey = CharUtil.toBytes(SORTED_PREFIX + key);
@@ -162,10 +173,10 @@ class SortedCacheImpl implements Cache {
         if (size > live) {
 
             // 获得 score 比较小的，多出 liveRange 部分的列表
-            Response<Set<byte[]>> zrangeResp = redis.zrange(SortedMainKey, 0, size - live);
+            Response<List<byte[]>> zrangeResp = redis.zrange(SortedMainKey, 0, size - live);
             redis.sync();
 
-            Set<byte[]> zrangeBytes = zrangeResp.get();
+            List<byte[]> zrangeBytes = zrangeResp.get();
             byte[][] zrangeBytess = zrangeBytes.toArray(new byte[zrangeBytes.size()][]);
 
             // 删除有续集中的相应部分

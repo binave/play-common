@@ -11,11 +11,14 @@
 !*.xml
 
 # Avoid ignoring default file
+!.editorconfig
+!.gitattributes
 !.gitignore
 !LICENSE
 !README.md
 
 # Ignore some directory
 .*/
+.gitmodules
 gradle/
 target/

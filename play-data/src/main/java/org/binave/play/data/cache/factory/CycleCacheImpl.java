@@ -23,6 +23,8 @@ import org.binave.common.util.FutureTime;
 import org.binave.play.data.api.Adder;
 import redis.clients.jedis.Jedis;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Objects;
 
 /**
@@ -44,7 +46,16 @@ class CycleCacheImpl extends RedisLockByImpl implements Cache, Adder {
         super(redis, tag);
 
         this.redis = redis;
-        this.url = redis.getClient().getHost() + redis.getDB();
+        try {
+            // redis.getClient().getHost(): change api
+            Method declaredMethodNameGetHostAndPort = redis.clients.jedis.Connection.class.
+                    getDeclaredMethod("getHostAndPort");
+            declaredMethodNameGetHostAndPort.setAccessible(true);
+            this.url = (String) declaredMethodNameGetHostAndPort.invoke(redis.getClient()) + redis.getDB();
+        } catch (IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
+
         this.futureTime = futureTime;
         this.codec = codec;
         this.index = index;

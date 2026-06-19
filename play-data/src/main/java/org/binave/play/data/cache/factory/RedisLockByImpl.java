@@ -18,6 +18,7 @@ package org.binave.play.data.cache.factory;
 
 import org.binave.play.data.api.LockBy;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.params.SetParams;
 
 import java.security.SecureRandom;
 import java.util.HashMap;
@@ -78,9 +79,7 @@ public class RedisLockByImpl implements LockBy {
         String status = redis.set(
                 PREFIX + key,
                 tag + stamp,
-                "NX", // Only set the key if it does not already exist
-                "PX", // milliseconds
-                LOCK_MS
+                SetParams.setParams().nx().px(LOCK_MS)
         );
 
         if (!"OK".equals(status)) {

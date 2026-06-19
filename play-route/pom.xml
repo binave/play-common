@@ -16,7 +16,7 @@
             <!-- netty 5 版本已经遭到废弃，未来可能直接跳到 6 版本 -->
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
-            <version>4.1.25.Final</version>
+            <version>4.1.115.Final</version>
         </dependency>
     </dependencies>
 
